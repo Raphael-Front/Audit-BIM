@@ -1,0 +1,195 @@
+import { Routes, Route, Navigate } from "react-router-dom";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AppShell } from "@/components/layout/AppShell";
+import { Container } from "@/components/layout/Container";
+
+import { LoginPage } from "@/pages/LoginPage";
+import { AuthCallbackPage } from "@/pages/AuthCallbackPage";
+import { DashboardPage } from "@/pages/DashboardPage";
+import { ObrasPage } from "@/pages/ObrasPage";
+import { ObraNewPage } from "@/pages/ObraNewPage";
+import { ObraDetailPage } from "@/pages/ObraDetailPage";
+import { AuditoriasPage } from "@/pages/AuditoriasPage";
+import { AuditoriaNewPage } from "@/pages/AuditoriaNewPage";
+import { AuditoriaDetailPage } from "@/pages/AuditoriaDetailPage";
+import { ExecucaoPage } from "@/pages/ExecucaoPage";
+import { NCsPage } from "@/pages/NCsPage";
+import { RelatoriosPage } from "@/pages/RelatoriosPage";
+import { TemplatesPage } from "@/pages/TemplatesPage";
+import { TemplateNewPage } from "@/pages/TemplateNewPage";
+import { TemplateDetailPage } from "@/pages/TemplateDetailPage";
+import { AuditsPage } from "@/pages/AuditsPage";
+import { AuditDetailPage } from "@/pages/AuditDetailPage";
+
+function HomeRedirect() {
+  const token = typeof window !== "undefined" ? document.cookie.match(/auth-token=([^;]+)/) : null;
+  return token ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />;
+}
+
+function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return <AppShell>{children}</AppShell>;
+}
+
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<HomeRedirect />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/auth/callback" element={<AuthCallbackPage />} />
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <DashboardPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/obras"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <ObrasPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/obras/new"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <ObraNewPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/obras/:id"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <ObraDetailPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/auditorias"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <AuditoriasPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/auditorias/new"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <AuditoriaNewPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/auditorias/:id"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <AuditoriaDetailPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/auditorias/:id/execucao"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <ExecucaoPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/auditorias/:id/ncs"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <NCsPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/auditorias/:id/relatorios"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <RelatoriosPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/templates"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <TemplatesPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/templates/new"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <TemplateNewPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/templates/:id"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <TemplateDetailPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/audits"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <Container>
+                <AuditsPage />
+              </Container>
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/audits/:id"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <Container>
+                <AuditDetailPage />
+              </Container>
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+    </Routes>
+  );
+}

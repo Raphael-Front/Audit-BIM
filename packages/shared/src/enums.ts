@@ -1,0 +1,41 @@
+export enum UserRole {
+  ADMIN = "ADMIN",
+  AUDITOR = "AUDITOR",
+  READER = "READER",
+}
+
+export enum AuditStatus {
+  IN_PROGRESS = "IN_PROGRESS",
+  WAITING_FOR_ISSUES = "WAITING_FOR_ISSUES",
+  COMPLETED = "COMPLETED",
+  CANCELED = "CANCELED",
+}
+
+export enum AuditKind {
+  INITIAL = "INITIAL",
+  REVIEW = "REVIEW",
+}
+
+export enum ReportKind {
+  PARTIAL = "PARTIAL",
+  TECHNICAL = "TECHNICAL",
+  FINAL = "FINAL",
+}
+
+export enum AuditItemStatus {
+  NOT_STARTED = "NOT_STARTED",
+  CONFORMING = "CONFORMING",
+  NONCONFORMING = "NONCONFORMING",
+  OBSERVATION = "OBSERVATION",
+  NA = "NA",
+  RESOLVED = "RESOLVED",
+  ALWAYS_CONFORMING = "ALWAYS_CONFORMING",
+}
+
+export enum AuditItemSeverity {
+  LOW = "LOW",
+  MEDIUM = "MEDIUM",
+  HIGH = "HIGH",
+  CRITICAL = "CRITICAL",
+}
+

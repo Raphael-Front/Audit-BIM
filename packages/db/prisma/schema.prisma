@@ -1,0 +1,391 @@
+// BIM Audit Web — Prisma ORM schema (PostgreSQL)
+// Alinhado ao PRD/Schema BD: stand-by, fases da auditoria, itens personalizados, revisões, relatórios.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url= env("DATABASE_URL")
+}
+
+/* -----------------------------
+   ENUMS
+------------------------------ */
+
+enum UserRole {
+  ADMIN
+  AUDITOR
+  READER
+}
+
+enum AuditStatus {
+  IN_PROGRESS
+  WAITING_FOR_ISSUES // Stand-by: aguardando vínculo de apontamentos no Construflow
+  COMPLETED
+  CANCELED
+}
+
+enum AuditKind {
+  INITIAL   // primeira auditoria da disciplina/fase
+  REVIEW    // revisão de auditoria anterior
+}
+
+enum ReportKind {
+  PARTIAL   // auditoria em andamento
+  TECHNICAL // auditoria em stand-by
+  FINAL     // auditoria concluída
+}
+
+enum AuditItemStatus {
+  NOT_STARTED
+  CONFORMING
+  NONCONFORMING
+  OBSERVATION
+  NA
+  RESOLVED          // estava NC e agora foi resolvido (revisão)
+  ALWAYS_CONFORMING // historicamente sempre conforme (revisão)
+}
+
+enum AuditItemSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+/* -----------------------------
+   CORE: USERS / AUTH
+------------------------------ */
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String   // hash (bcrypt/argon2)
+  role      UserRole @default(AUDITOR)
+  active    Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  auditsCreated   Audit[]           @relation("AuditCreatedBy")
+  auditsResponsible Audit[]          @relation("AuditAuditor")
+  auditsCanceled  Audit[]           @relation("AuditCanceledBy")
+  logs            AuditLog[]        @relation("LogByUser")
+  customItemsCreated AuditCustomItem[]
+}
+
+/* -----------------------------
+   MASTER DATA: WORKS / PHASES
+------------------------------ */
+
+model Work {
+  id        String   @id @default(cuid())
+  name      String
+  code      String?  @unique
+  active    Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  phases Phase[]
+  audits Audit[]
+}
+
+model Phase {
+  id        String   @id @default(cuid())
+  workId    String
+  name      String
+  order     Int      @default(0)
+  active    Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  work   Work   @relation(fields: [workId], references: [id], onDelete: Cascade)
+  audits Audit[]
+
+  @@unique([workId, name])
+  @@index([workId])
+}
+
+/* -----------------------------
+   AUDIT PHASES (PL, LO, PE etc.)
+------------------------------ */
+
+model AuditPhase {
+  id        String   @id @default(cuid())
+  name      String   @unique // ex: "PL", "EP", "LO"
+  label     String
+  order     Int      @default(0)
+  active    Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  checklistItems ChecklistItem[]
+  audits         Audit[]
+}
+
+/* -----------------------------
+   LIBRARY: DISCIPLINES / CATEGORIES / CHECKLIST TEMPLATE
+------------------------------ */
+
+model Discipline {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  order     Int      @default(0)
+  active    Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  categories Category[]
+  audits     Audit[]
+  customItems AuditCustomItem[]
+}
+
+model Category {
+  id           String   @id @default(cuid())
+  disciplineId String
+  name         String
+  order        Int      @default(0)
+  active       Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  discipline     Discipline    @relation(fields: [disciplineId], references: [id], onDelete: Restrict)
+  checklistItems ChecklistItem[]
+  customItems    AuditCustomItem[]
+
+  @@unique([disciplineId, name])
+  @@index([disciplineId])
+}
+
+model ChecklistItem {
+  id           String   @id @default(cuid())
+  categoryId   String
+  auditPhaseId String
+
+  code        String?
+  description String
+  weight      Int     @default(1)
+  maxPoints   Int     @default(10)
+  active      Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  category   Category   @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  auditPhase AuditPhase @relation(fields: [auditPhaseId], references: [id], onDelete: Restrict)
+  auditItems AuditItem[]
+
+  @@unique([auditPhaseId, categoryId, code])
+  @@index([categoryId])
+  @@index([auditPhaseId])
+}
+
+/* -----------------------------
+   AUDITS: HEADER + ITEMS
+------------------------------ */
+
+model Audit {
+  id            String      @id @default(cuid())
+
+  workId        String
+  phaseId       String
+  disciplineId  String
+  auditPhaseId  String
+
+  title         String
+  startDate     DateTime
+  endDate       DateTime?
+  status        AuditStatus @default(IN_PROGRESS)
+
+  plannedStartDate DateTime?
+  plannedEndDate   DateTime?
+
+  kind            AuditKind @default(INITIAL)
+  parentAuditId    String?
+  revisionNumber   Int      @default(0)
+
+  createdById   String
+  auditorId     String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  canceledAt     DateTime?
+  canceledById   String?
+  cancelReason   String?
+
+  work       Work       @relation(fields: [workId], references: [id], onDelete: Restrict)
+  phase      Phase      @relation(fields: [phaseId], references: [id], onDelete: Restrict)
+  discipline Discipline @relation(fields: [disciplineId], references: [id], onDelete: Restrict)
+  auditPhase AuditPhase @relation(fields: [auditPhaseId], references: [id], onDelete: Restrict)
+  createdBy  User       @relation("AuditCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  auditor    User       @relation("AuditAuditor", fields: [auditorId], references: [id], onDelete: Restrict)
+  canceledBy User?     @relation("AuditCanceledBy", fields: [canceledById], references: [id], onDelete: Restrict)
+
+  parentAudit Audit?  @relation("AuditRevisions", fields: [parentAuditId], references: [id], onDelete: Restrict)
+  revisions   Audit[] @relation("AuditRevisions")
+
+  items       AuditItem[]
+  logs        AuditLog[]
+  reports     Report[]
+  customItems AuditCustomItem[]
+
+  @@index([workId])
+  @@index([phaseId])
+  @@index([disciplineId])
+  @@index([auditPhaseId])
+  @@index([status])
+  @@index([createdById])
+  @@index([auditorId])
+  @@index([canceledById])
+  @@index([workId, phaseId, disciplineId, auditPhaseId])
+}
+
+/* -----------------------------
+   ITENS PERSONALIZADOS
+------------------------------ */
+
+model AuditCustomItem {
+  id            String   @id @default(cuid())
+  auditId       String
+  disciplineId  String
+  categoryId    String?
+
+  description   String
+  weight        Int?
+  maxPoints     Int?
+
+  createdById   String
+  createdAt     DateTime @default(now())
+
+  audit       Audit       @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  discipline  Discipline  @relation(fields: [disciplineId], references: [id], onDelete: Restrict)
+  category    Category?   @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  createdBy   User        @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  auditItems  AuditItem[]
+
+  @@index([auditId])
+  @@index([disciplineId])
+  @@index([categoryId])
+  @@index([createdById])
+}
+
+/* -----------------------------
+   AUDIT ITEMS
+------------------------------ */
+
+model AuditItem {
+  id                 String          @id @default(cuid())
+  auditId            String
+
+  checklistItemId    String?
+  customItemId       String?
+  previousAuditItemId String?
+
+  status             AuditItemStatus @default(NOT_STARTED)
+  severity           AuditItemSeverity?
+
+  evidenceText       String?
+  construflowRef     String?
+  nextReviewAt       DateTime?
+
+  erroPosterior      Boolean @default(false)
+
+  weightOverride     Int?
+  maxPointsOverride  Int?
+  pointsObtained     Int?
+  isLocked           Boolean @default(false)
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  audit          Audit           @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  checklistItem  ChecklistItem?  @relation(fields: [checklistItemId], references: [id], onDelete: Restrict)
+  customItem     AuditCustomItem? @relation(fields: [customItemId], references: [id], onDelete: Cascade)
+  previousAuditItem AuditItem?   @relation("AuditItemHistory", fields: [previousAuditItemId], references: [id], onDelete: Restrict)
+  nextAuditItems AuditItem[]     @relation("AuditItemHistory")
+
+  attachments Attachment[]
+  logs        AuditLog[]
+
+  @@unique([auditId, checklistItemId])
+  @@index([auditId, status])
+  @@index([checklistItemId])
+  @@index([customItemId])
+  @@index([nextReviewAt])
+  @@index([erroPosterior])
+}
+
+/* -----------------------------
+   REPORTS
+------------------------------ */
+
+model Report {
+  id          String     @id @default(cuid())
+  auditId     String
+  kind        ReportKind
+  version     Int        @default(1)
+  fileUrl     String?
+  fileType    String?
+  generatedAt DateTime   @default(now())
+
+  audit Audit @relation(fields: [auditId], references: [id], onDelete: Cascade)
+
+  @@index([auditId])
+  @@index([kind])
+  @@index([generatedAt])
+}
+
+/* -----------------------------
+   FILES: EVIDÊNCIAS (anexos)
+------------------------------ */
+
+model Attachment {
+  id          String   @id @default(cuid())
+  auditItemId String
+
+  name        String
+  url         String
+  mimeType    String?
+  sizeBytes   Int?
+
+  createdAt   DateTime @default(now())
+
+  auditItem AuditItem @relation(fields: [auditItemId], references: [id], onDelete: Cascade)
+
+  @@index([auditItemId])
+}
+
+/* -----------------------------
+   AUDIT TRAIL: LOGS
+------------------------------ */
+
+model AuditLog {
+  id          String   @id @default(cuid())
+
+  userId      String
+  auditId     String?
+  auditItemId String?
+
+  action      String
+  before      Json?
+  after       Json?
+
+  createdAt   DateTime @default(now())
+
+  user      User      @relation("LogByUser", fields: [userId], references: [id], onDelete: Restrict)
+  audit     Audit?    @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  auditItem AuditItem? @relation(fields: [auditItemId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([auditId])
+  @@index([auditItemId])
+  @@index([createdAt])
+}
