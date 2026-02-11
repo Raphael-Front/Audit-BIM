@@ -1,4 +1,4 @@
-import { IsOptional, IsString } from "class-validator";
+import { IsOptional, IsString } from 'class-validator';
 
 export class CreateWorkDto {
   @IsString()
@@ -8,4 +8,3 @@ export class CreateWorkDto {
   @IsString()
   code?: string;
 }
-

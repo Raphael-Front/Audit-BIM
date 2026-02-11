@@ -1,5 +1,5 @@
-import { Test, TestingModule } from "@nestjs/testing";
-import { AppController } from "./app.controller";
+import { Test, TestingModule } from '@nestjs/testing';
+import { AppController } from './app.controller';
 
 describe('AppController', () => {
   let appController: AppController;
@@ -12,8 +12,8 @@ describe('AppController', () => {
     appController = app.get<AppController>(AppController);
   });
 
-  describe("health", () => {
-    it("should return ok true", () => {
+  describe('health', () => {
+    it('should return ok true', () => {
       expect(appController.health()).toEqual({ ok: true });
     });
   });

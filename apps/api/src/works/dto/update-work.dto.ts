@@ -1,4 +1,4 @@
-import { IsBoolean, IsOptional, IsString } from "class-validator";
+import { IsBoolean, IsOptional, IsString } from 'class-validator';
 
 export class UpdateWorkDto {
   @IsOptional()
@@ -13,4 +13,3 @@ export class UpdateWorkDto {
   @IsBoolean()
   active?: boolean;
 }
-

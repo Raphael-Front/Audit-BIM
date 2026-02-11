@@ -1,13 +1,14 @@
-import { Body, Controller, Get, Post, UseGuards } from "@nestjs/common";
-import { UserRole } from "@prisma/client";
-import { JwtAuthGuard } from "../auth/jwt-auth.guard";
-import { Roles } from "../common/roles.decorator";
-import { CreateUserDto } from "./dto/create-user.dto";
-import { UsersService } from "./users.service";
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { PerfilUsuario } from '@prisma/client';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Roles } from '../common/roles.decorator';
+import { RolesGuard } from '../common/roles.guard';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UsersService } from './users.service';
 
-@Controller("users")
-@UseGuards(JwtAuthGuard)
-@Roles(UserRole.ADMIN)
+@Controller('users')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(PerfilUsuario.admin_bim)
 export class UsersController {
   constructor(private readonly users: UsersService) {}
 
@@ -21,4 +22,3 @@ export class UsersController {
     return this.users.create(dto);
   }
 }
-

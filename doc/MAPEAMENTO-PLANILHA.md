@@ -17,6 +17,10 @@ configure no `import-config.json`:
 
 O script deriva automaticamente: Obras (Obra), Fases de auditoria (Fase), Disciplinas, Categorias, itens de checklist, uma auditoria por (Obra + Fase + Disciplina) e um item de auditoria por linha.
 
+### Regra de identificação de auditorias (Obra + Fase + Disciplina)
+
+A **auditoria** é identificada pela combinação de 3 campos: **Obra**, **Fase** e **Disciplina**. Quando qualquer um desses 3 muda, é uma **nova auditoria**. Na planilha, essas colunas nem sempre estão preenchidas em todas as linhas (há blocos visuais); o script aplica *propagação* (fill-down): células vazias herdam o último valor conhecido. Ex.: linhas 2–19 com R15RV/PR na primeira linha e vazias abaixo pertencem à mesma auditoria; na linha 20, se Obra mudar para R4A ou Fase para PB, inicia nova auditoria.
+
 ## Formato esperado da planilha (várias abas)
 
 - **Excel:** arquivo `.xlsx` com uma aba por entidade (Usuários, Obras, Fases, Disciplinas, Categorias, Fases Auditoria, Itens Checklist, Auditorias, Itens Auditoria).

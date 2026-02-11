@@ -1,4 +1,4 @@
-import { IsInt, IsOptional, IsString, Min } from "class-validator";
+import { IsInt, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreateDisciplineDto {
   @IsString()
@@ -9,4 +9,3 @@ export class CreateDisciplineDto {
   @Min(0)
   order?: number;
 }
-

@@ -2,7 +2,10 @@
   "name": "bim-audit-web",
   "version": "1.0.0",
   "private": true,
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "concurrently \"npm run dev -w api\" \"npm run dev -w web\"",
     "dev:api": "npm run dev -w api",
@@ -22,12 +25,12 @@
     "import": "node --experimental-strip-types scripts/import-spreadsheet.ts"
   },
   "devDependencies": {
-    "@prisma/client": "^6.19.2",
+    "@prisma/client": "^7.3.0",
     "@prisma/debug": "^6.19.2",
-    "prettier": "^3.6.2",
-    "prisma": "^6.19.2",
     "concurrently": "^9.1.2",
-    "typescript": "^5.9.2",
-    "tsx": "^4.20.6"
+    "prettier": "^3.6.2",
+    "prisma": "^7.3.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.2"
   }
 }

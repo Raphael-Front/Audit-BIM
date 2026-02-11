@@ -39,7 +39,7 @@ async function main() {
   const filePath = process.argv[2];
   const forceReset = process.argv.includes("--reset-password");
   if (!filePath) {
-    console.error("Uso: pnpm run migrate-users -- <planilha-usuarios.xlsx> [--reset-password]");
+    console.error("Uso: npm run migrate-users -- <planilha-usuarios.xlsx> [--reset-password]");
     process.exit(1);
   }
   if (!existsSync(filePath)) {

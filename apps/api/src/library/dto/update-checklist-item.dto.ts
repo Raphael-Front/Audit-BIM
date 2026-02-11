@@ -1,4 +1,4 @@
-import { IsBoolean, IsInt, IsOptional, IsString, Min } from "class-validator";
+import { IsBoolean, IsInt, IsOptional, IsString, Min } from 'class-validator';
 
 export class UpdateChecklistItemDto {
   @IsOptional()
@@ -27,4 +27,3 @@ export class UpdateChecklistItemDto {
   @IsBoolean()
   active?: boolean;
 }
-

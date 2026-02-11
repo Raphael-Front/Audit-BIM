@@ -5,10 +5,10 @@ cd /d "%~dp0"
 echo Iniciando API (porta 3001) e Web (porta 3000)...
 echo.
 
-start "API - porta 3001" cmd /k "cd /d %~dp0apps\api && pnpm run dev"
+start "API - porta 3001" cmd /k "cd /d %~dp0apps\api && npm run dev"
 timeout /t 3 /nobreak >nul
 
-start "Web - porta 3000" cmd /k "cd /d %~dp0apps\web && pnpm run dev"
+start "Web - porta 3000" cmd /k "cd /d %~dp0apps\web && npm run dev"
 
 echo.
 echo Duas janelas foram abertas.

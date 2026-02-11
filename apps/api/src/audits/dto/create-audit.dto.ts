@@ -1,5 +1,4 @@
-import { IsDateString, IsEnum, IsOptional, IsString } from "class-validator";
-import { AuditKind } from "@prisma/client";
+import { IsDateString, IsOptional, IsString } from 'class-validator';
 
 export class CreateAuditDto {
   @IsString()
@@ -32,11 +31,6 @@ export class CreateAuditDto {
   plannedEndDate?: string;
 
   @IsOptional()
-  @IsEnum(AuditKind)
-  kind?: AuditKind;
-
-  @IsOptional()
   @IsString()
   parentAuditId?: string;
 }
-

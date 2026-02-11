@@ -14,7 +14,7 @@ import { fileURLToPath } from "url";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 
-// Carrega .env: raiz do projeto primeiro, depois scripts/ (permite rodar pnpm run import da raiz)
+// Carrega .env: raiz do projeto primeiro, depois scripts/ (permite rodar npm run import da raiz)
 const rootDir = join(scriptDir, "..");
 const rootEnv = join(rootDir, ".env");
 const scriptsEnv = join(scriptDir, ".env");
@@ -117,6 +117,13 @@ interface NormalizedSingleRow {
   pontos: number | null;
 }
 
+/**
+ * Lê e normaliza a planilha única.
+ * Regra de auditoria: Obra + Fase + Disciplina definem uma auditoria.
+ * Quando qualquer um desses 3 campos muda, inicia nova auditoria.
+ * Células vazias de Obra/Fase/Disciplina são preenchidas com o último valor
+ * conhecido (propagação/fill-down), para agrupar corretamente os itens.
+ */
 function readAndNormalizeSingleSheet(
   wb: XLSX.WorkBook,
   singleSheet: SingleSheetConfig
@@ -126,11 +133,22 @@ function readAndNormalizeSingleSheet(
     headerRowIndex: singleSheet.headerRowIndex,
   });
   const c = singleSheet.columns;
-  return rawRows
-    .map((row, index) => {
-      const obra = String((row[c.obra] ?? "").toString()).trim();
-      const fase = String((row[c.fase] ?? "").toString()).trim();
-      const disciplina = String((row[c.disciplina] ?? "").toString()).trim();
+
+  let lastObra = "";
+  let lastFase = "";
+  let lastDisciplina = "";
+
+  const normalized = rawRows
+    .map((row) => {
+      const obraRaw = String((row[c.obra] ?? "").toString()).trim();
+      const faseRaw = String((row[c.fase] ?? "").toString()).trim();
+      const disciplinaRaw = String((row[c.disciplina] ?? "").toString()).trim();
+
+      // Propagar valores vazios: usar o último conhecido (regra: mudança = nova auditoria)
+      const obra = obraRaw !== "" ? (lastObra = obraRaw) : lastObra;
+      const fase = faseRaw !== "" ? (lastFase = faseRaw) : lastFase;
+      const disciplina = disciplinaRaw !== "" ? (lastDisciplina = disciplinaRaw) : lastDisciplina;
+
       const categoria = String((row[c.categoria] ?? "").toString()).trim();
       const itensVerificacao = String((row[c.itensVerificacao] ?? "").toString()).trim();
       const status = String((row[c.status] ?? "").toString()).trim();
@@ -154,6 +172,8 @@ function readAndNormalizeSingleSheet(
       };
     })
     .filter((r) => r.obra !== "" || r.disciplina !== "" || r.itensVerificacao !== "");
+
+  return normalized;
 }
 
 /** Gera linhas virtuais e config para import quando singleSheet está ativo. */
@@ -418,6 +438,7 @@ async function importUsers(prisma: PrismaClient, rows: Record<string, unknown>[]
   return map;
 }
 
+/** Obra (Work): sempre pula se já existir — tabela inalterável. */
 async function importWorks(prisma: PrismaClient, rows: Record<string, unknown>[], config: ImportConfig): Promise<Map<string, string>> {
   const map = new Map<string, string>();
   const sheetConfig = config.sheets?.Work;
@@ -434,13 +455,14 @@ async function importWorks(prisma: PrismaClient, rows: Record<string, unknown>[]
       continue;
     }
     const code = raw.code ?? raw["Código"] ? String(raw.code ?? raw["Código"]).trim() : null;
-    if (code && config.onDuplicate === "skip") {
-      const existing = await prisma.work.findUnique({ where: { code } });
-      if (existing) {
-        map.set(code, existing.id);
-        map.set(name, existing.id);
-        continue;
-      }
+    // Tabela inalterável: sempre pular se já existir (por código ou nome)
+    const existing = code
+      ? await prisma.work.findUnique({ where: { code } })
+      : await prisma.work.findFirst({ where: { name } });
+    if (existing) {
+      if (code) map.set(code, existing.id);
+      map.set(name, existing.id);
+      continue;
     }
     const active = raw.active ?? raw["Ativo"] !== undefined ? Boolean(Number(raw.active ?? raw["Ativo"]) ?? raw.active === "sim") : true;
     try {
@@ -457,6 +479,7 @@ async function importWorks(prisma: PrismaClient, rows: Record<string, unknown>[]
   return map;
 }
 
+/** Fase (Phase): sempre pula se já existir — tabela inalterável. */
 async function importPhases(prisma: PrismaClient, rows: Record<string, unknown>[], config: ImportConfig, workIdByCode: Map<string, string>): Promise<void> {
   const sheetConfig = config.sheets?.Phase;
   if (!sheetConfig || rows.length === 0) return;
@@ -478,6 +501,10 @@ async function importPhases(prisma: PrismaClient, rows: Record<string, unknown>[
       errors++;
       continue;
     }
+    // Tabela inalterável: sempre pular se fase já existir para esta obra
+    const existing = await prisma.phase.findFirst({ where: { workId, name } });
+    if (existing) continue;
+
     const order = raw.order ?? raw["Ordem"] != null ? Number(raw.order ?? raw["Ordem"]) || 0 : 0;
     const active = raw.active ?? raw["Ativo"] !== undefined ? Boolean(Number(raw.active ?? raw["Ativo"]) ?? raw.active === "sim") : true;
     try {
@@ -491,6 +518,7 @@ async function importPhases(prisma: PrismaClient, rows: Record<string, unknown>[
   log(`Phase: ${inserted} inseridos, ${errors} erros.`);
 }
 
+/** Disciplina (Discipline): sempre pula se já existir — tabela inalterável. */
 async function importDisciplines(prisma: PrismaClient, rows: Record<string, unknown>[], config: ImportConfig): Promise<Map<string, string>> {
   const map = new Map<string, string>();
   const sheetConfig = config.sheets?.Discipline;
@@ -506,12 +534,11 @@ async function importDisciplines(prisma: PrismaClient, rows: Record<string, unkn
       errors++;
       continue;
     }
-    if (config.onDuplicate === "skip") {
-      const existing = await prisma.discipline.findUnique({ where: { name } });
-      if (existing) {
-        map.set(name, existing.id);
-        continue;
-      }
+    // Tabela inalterável: sempre pular se já existir
+    const existing = await prisma.discipline.findUnique({ where: { name } });
+    if (existing) {
+      map.set(name, existing.id);
+      continue;
     }
     const order = raw.order ?? raw["Ordem"] != null ? Number(raw.order ?? raw["Ordem"]) || 0 : 0;
     const active = raw.active ?? raw["Ativo"] !== undefined ? Boolean(Number(raw.active ?? raw["Ativo"]) ?? raw.active === "sim") : true;
@@ -565,6 +592,7 @@ async function importCategories(prisma: PrismaClient, rows: Record<string, unkno
   return map;
 }
 
+/** Fase Auditoria (AuditPhase): sempre pula se já existir — tabela inalterável. */
 async function importAuditPhases(prisma: PrismaClient, rows: Record<string, unknown>[], config: ImportConfig): Promise<Map<string, string>> {
   const map = new Map<string, string>();
   const sheetConfig = config.sheets?.AuditPhase;
@@ -581,12 +609,11 @@ async function importAuditPhases(prisma: PrismaClient, rows: Record<string, unkn
       errors++;
       continue;
     }
-    if (config.onDuplicate === "skip") {
-      const existing = await prisma.auditPhase.findUnique({ where: { name } });
-      if (existing) {
-        map.set(name, existing.id);
-        continue;
-      }
+    // Tabela inalterável: sempre pular se já existir
+    const existing = await prisma.auditPhase.findUnique({ where: { name } });
+    if (existing) {
+      map.set(name, existing.id);
+      continue;
     }
     const order = raw.order ?? raw["Ordem"] != null ? Number(raw.order ?? raw["Ordem"]) || 0 : 0;
     const active = raw.active ?? raw["Ativo"] !== undefined ? Boolean(Number(raw.active ?? raw["Ativo"]) ?? raw.active === "sim") : true;
@@ -846,7 +873,7 @@ function writeLogFile(): void {
 async function main(): Promise<void> {
   const filePath = process.argv[2];
   if (!filePath) {
-    console.error("Uso: pnpm run import -- <caminho-da-planilha.xlsx>");
+    console.error("Uso: npm run import -- <caminho-da-planilha.xlsx>");
     process.exit(1);
   }
   if (!process.env.DATABASE_URL) {
@@ -930,7 +957,7 @@ async function main(): Promise<void> {
       console.error("Erro de conexão com o banco. Verifique:");
       console.error("  1. PostgreSQL está rodando (localhost:5432)");
       console.error("  2. Usuário e senha no .env estão corretos (ex.: postgres / 123)");
-      console.error("  3. O banco bim_audit existe (rode: pnpm --filter db exec prisma migrate deploy)");
+      console.error("  3. O banco bim_audit existe (rode: npm run migrate:deploy no pacote db ou na raiz)");
       console.error("");
       throw e;
     }

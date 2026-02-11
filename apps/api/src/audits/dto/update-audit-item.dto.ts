@@ -1,14 +1,17 @@
-import { AuditItemSeverity, AuditItemStatus } from "@prisma/client";
-import { IsDateString, IsEnum, IsInt, IsOptional, IsString, Min } from "class-validator";
+import { StatusItemAuditoria } from '@prisma/client';
+import {
+  IsDateString,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 
 export class UpdateAuditItemDto {
   @IsOptional()
-  @IsEnum(AuditItemStatus)
-  status?: AuditItemStatus;
-
-  @IsOptional()
-  @IsEnum(AuditItemSeverity)
-  severity?: AuditItemSeverity | null;
+  @IsEnum(StatusItemAuditoria)
+  status?: StatusItemAuditoria;
 
   @IsOptional()
   @IsString()
@@ -27,4 +30,3 @@ export class UpdateAuditItemDto {
   @Min(0)
   pointsObtained?: number | null;
 }
-

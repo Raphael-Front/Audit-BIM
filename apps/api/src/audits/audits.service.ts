@@ -1,9 +1,13 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import { AuditItemStatus, AuditStatus } from "@prisma/client";
-import { PrismaService } from "../prisma/prisma.service";
-import { AddCustomItemDto } from "./dto/add-custom-item.dto";
-import { CreateAuditDto } from "./dto/create-audit.dto";
-import { UpdateAuditItemDto } from "./dto/update-audit-item.dto";
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { AcaoHistorico, StatusAuditoria, StatusItemAuditoria } from '@prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
+import { AddCustomItemDto } from './dto/add-custom-item.dto';
+import { CreateAuditDto } from './dto/create-audit.dto';
+import { UpdateAuditItemDto } from './dto/update-audit-item.dto';
 
 const OBSERVATION_PERCENT_DEFAULT = 50;
 
@@ -11,129 +15,187 @@ function clampInt(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, Math.trunc(n)));
 }
 
+function genCodigoAuditoria(): string {
+  return `AUD-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 @Injectable()
 export class AuditsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private async writeHistorio(
+    tx: Parameters<Parameters<PrismaService['$transaction']>[0]>[0],
+    data: {
+      tabelaNome: string;
+      registroId: string;
+      campoNome: string;
+      valorAnterior?: string | null;
+      valorNovo?: string | null;
+      acao: AcaoHistorico;
+      usuarioId: string;
+    },
+  ) {
+    await tx.tblHistoricoAlteracao.create({
+      data: {
+        ...data,
+        valorAnterior: data.valorAnterior ?? null,
+        valorNovo: data.valorNovo ?? null,
+      },
+    });
+  }
+
   async list(params: {
     workId?: string;
     phaseId?: string;
-    status?: AuditStatus;
+    status?: StatusAuditoria;
     auditorId?: string;
   }) {
-    return this.prisma.audit.findMany({
-      where: {
-        workId: params.workId,
-        phaseId: params.phaseId,
-        status: params.status,
-        auditorId: params.auditorId,
-      },
-      orderBy: { createdAt: "desc" },
+    const where: {
+      obraId?: string;
+      faseId?: string;
+      status?: StatusAuditoria;
+      auditorResponsavelId?: string;
+    } = {};
+    if (params.workId) where.obraId = params.workId;
+    if (params.phaseId) where.faseId = params.phaseId;
+    if (params.status) where.status = params.status;
+    if (params.auditorId) where.auditorResponsavelId = params.auditorId;
+
+    return this.prisma.fatoAuditoria.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
       include: {
-        work: true,
-        phase: true,
-        discipline: true,
-        auditPhase: true,
-        auditor: { select: { id: true, name: true, email: true, role: true } },
+        obra: true,
+        fase: true,
+        disciplina: true,
+        auditorResponsavel: {
+          select: {
+            id: true,
+            nomeCompleto: true,
+            email: true,
+            perfil: true,
+          },
+        },
       },
     });
   }
 
   async getById(id: string) {
-    const audit = await this.prisma.audit.findUnique({
+    const audit = await this.prisma.fatoAuditoria.findUnique({
       where: { id },
       include: {
-        work: true,
-        phase: true,
-        discipline: true,
-        auditPhase: true,
-        auditor: { select: { id: true, name: true, email: true, role: true } },
+        obra: true,
+        fase: true,
+        disciplina: true,
+        auditorResponsavel: {
+          select: {
+            id: true,
+            nomeCompleto: true,
+            email: true,
+            perfil: true,
+          },
+        },
       },
     });
-    if (!audit) throw new NotFoundException("Audit not found");
+    if (!audit) throw new NotFoundException('Audit not found');
     return audit;
   }
 
   async getItems(auditId: string) {
-    const audit = await this.prisma.audit.findUnique({ where: { id: auditId } });
-    if (!audit) throw new NotFoundException("Audit not found");
+    const audit = await this.prisma.fatoAuditoria.findUnique({
+      where: { id: auditId },
+    });
+    if (!audit) throw new NotFoundException('Audit not found');
 
-    const items = await this.prisma.auditItem.findMany({
-      where: { auditId },
-      orderBy: [{ createdAt: "asc" }],
+    return this.prisma.fatoAuditoriaItem.findMany({
+      where: { auditoriaId: auditId },
+      orderBy: [{ ordemExibicao: 'asc' }, { createdAt: 'asc' }],
       include: {
-        checklistItem: {
-          include: { category: { include: { discipline: true } }, auditPhase: true },
+        templateItem: {
+          include: {
+            categoria: { include: { disciplina: true } },
+            aplicabilidadeFases: { include: { fase: true } },
+          },
         },
-        customItem: {
-          include: { discipline: true, category: true },
-        },
-        attachments: true,
+        categoria: { include: { disciplina: true } },
+        disciplina: true,
+        itensPersonalizados: true,
       },
     });
-    return items;
   }
 
   async create(dto: CreateAuditDto, createdById: string) {
-    const [work, phase, discipline, auditPhase, auditor] = await Promise.all([
-      this.prisma.work.findUnique({ where: { id: dto.workId } }),
-      this.prisma.phase.findUnique({ where: { id: dto.phaseId } }),
-      this.prisma.discipline.findUnique({ where: { id: dto.disciplineId } }),
-      this.prisma.auditPhase.findUnique({ where: { id: dto.auditPhaseId } }),
-      this.prisma.user.findUnique({ where: { id: dto.auditorId } }),
+    const [obra, fase, discipline, auditor] = await Promise.all([
+      this.prisma.dimObra.findFirst({
+        where: { id: dto.workId, deletedAt: null },
+      }),
+      this.prisma.dimFase.findUnique({ where: { id: dto.auditPhaseId } }),
+      this.prisma.dimDisciplina.findUnique({ where: { id: dto.disciplineId } }),
+      this.prisma.dimUsuario.findUnique({ where: { id: dto.auditorId } }),
     ]);
-    if (!work) throw new NotFoundException("Work not found");
-    if (!phase) throw new NotFoundException("Phase not found");
-    if (!discipline) throw new NotFoundException("Discipline not found");
-    if (!auditPhase) throw new NotFoundException("Audit phase not found");
-    if (!auditor || !auditor.active) throw new NotFoundException("Auditor not found");
+    if (!obra) throw new NotFoundException('Work not found');
+    if (!fase) throw new NotFoundException('Audit phase not found');
+    if (!discipline) throw new NotFoundException('Discipline not found');
+    if (!auditor || !auditor.ativo)
+      throw new NotFoundException('Auditor not found');
 
-    const templateItems = await this.prisma.checklistItem.findMany({
-      where: { active: true, auditPhaseId: dto.auditPhaseId },
-      include: {
-        category: { include: { discipline: true } },
+    const templates = await this.prisma.tblChecklistTemplate.findMany({
+      where: {
+        ativo: true,
+        disciplinaId: dto.disciplineId,
+        aplicabilidadeFases: {
+          some: { faseId: dto.auditPhaseId },
+        },
       },
-      orderBy: [{ createdAt: "asc" }],
+      include: { categoria: { include: { disciplina: true } } },
+      orderBy: [{ ordemExibicao: 'asc' }, { createdAt: 'asc' }],
     });
-    if (templateItems.length === 0) throw new BadRequestException("No active checklist items for this audit phase");
+    if (templates.length === 0)
+      throw new BadRequestException(
+        'No active checklist items for this audit phase',
+      );
 
-    const kind = dto.kind ?? "INITIAL";
-    const revisionNumber = dto.parentAuditId ? 1 : 0;
+    const codigoAuditoria = genCodigoAuditoria();
+    const dataInicio = new Date(dto.startDate);
+    const dataFimPrevista = dto.plannedEndDate
+      ? new Date(dto.plannedEndDate)
+      : null;
 
     return this.prisma.$transaction(async (tx) => {
-      const audit = await tx.audit.create({
+      const audit = await tx.fatoAuditoria.create({
         data: {
-          workId: dto.workId,
-          phaseId: dto.phaseId,
-          disciplineId: dto.disciplineId,
-          auditPhaseId: dto.auditPhaseId,
-          title: dto.title,
-          startDate: new Date(dto.startDate),
-          status: AuditStatus.IN_PROGRESS,
-          plannedStartDate: dto.plannedStartDate ? new Date(dto.plannedStartDate) : null,
-          plannedEndDate: dto.plannedEndDate ? new Date(dto.plannedEndDate) : null,
-          kind,
-          parentAuditId: dto.parentAuditId ?? null,
-          revisionNumber,
-          createdById,
-          auditorId: dto.auditorId,
+          codigoAuditoria,
+          obraId: dto.workId,
+          disciplinaId: dto.disciplineId,
+          faseId: dto.auditPhaseId,
+          titulo: dto.title,
+          dataInicio,
+          dataFimPrevista,
+          auditorResponsavelId: dto.auditorId,
+          status: StatusAuditoria.em_andamento,
         },
       });
 
-      await tx.auditItem.createMany({
-        data: templateItems.map((it) => ({
-          auditId: audit.id,
-          checklistItemId: it.id,
+      await tx.fatoAuditoriaItem.createMany({
+        data: templates.map((t, i) => ({
+          auditoriaId: audit.id,
+          templateItemId: t.id,
+          categoriaId: t.categoriaId,
+          disciplinaId: t.disciplinaId,
+          itemVerificacaoSnapshot: t.itemVerificacao,
+          pesoSnapshot: t.peso,
+          pontosMaximoSnapshot: t.pontosMaximo,
+          ordemExibicao: i,
         })),
       });
 
-      await tx.auditLog.create({
-        data: {
-          userId: createdById,
-          auditId: audit.id,
-          action: "CREATE_AUDIT",
-          after: audit as unknown as object,
-        },
+      await this.writeHistorio(tx, {
+        tabelaNome: 'fato_auditorias',
+        registroId: audit.id,
+        campoNome: 'status',
+        valorNovo: StatusAuditoria.em_andamento,
+        acao: AcaoHistorico.INSERT,
+        usuarioId: createdById,
       });
 
       return audit;
@@ -141,200 +203,267 @@ export class AuditsService {
   }
 
   async finishVerification(auditId: string, userId: string) {
-    const audit = await this.prisma.audit.findUnique({ where: { id: auditId } });
-    if (!audit) throw new NotFoundException("Audit not found");
-    if (audit.status !== AuditStatus.IN_PROGRESS) {
-      throw new BadRequestException("Audit must be IN_PROGRESS to finish verification");
+    const audit = await this.prisma.fatoAuditoria.findUnique({
+      where: { id: auditId },
+    });
+    if (!audit) throw new NotFoundException('Audit not found');
+    if (audit.status !== StatusAuditoria.em_andamento) {
+      throw new BadRequestException(
+        'Audit must be em_andamento to finish verification',
+      );
     }
 
-    const items = await this.prisma.auditItem.findMany({
-      where: { auditId },
+    const items = await this.prisma.fatoAuditoriaItem.findMany({
+      where: { auditoriaId: auditId },
       select: { status: true },
     });
-    const notStarted = items.filter((it) => it.status === AuditItemStatus.NOT_STARTED);
+    const notStarted = items.filter(
+      (it) => it.status === StatusItemAuditoria.nao_iniciado,
+    );
     if (notStarted.length > 0) {
-      throw new BadRequestException("All items must be evaluated (no NOT_STARTED) before finishing verification");
+      throw new BadRequestException(
+        'All items must be evaluated (no nao_iniciado) before finishing verification',
+      );
     }
 
     return this.prisma.$transaction(async (tx) => {
-      const updated = await tx.audit.update({
+      const updated = await tx.fatoAuditoria.update({
         where: { id: auditId },
-        data: { status: AuditStatus.WAITING_FOR_ISSUES },
+        data: { status: StatusAuditoria.aguardando_apontamentos },
       });
-      await tx.auditLog.create({
-        data: {
-          userId,
-          auditId,
-          action: "FINALIZE_EXECUTION",
-          before: { status: audit.status },
-          after: { status: updated.status },
-        },
+      await this.writeHistorio(tx, {
+        tabelaNome: 'fato_auditorias',
+        registroId: auditId,
+        campoNome: 'status',
+        valorAnterior: audit.status,
+        valorNovo: updated.status,
+        acao: AcaoHistorico.FINALIZAR_VERIFICACAO,
+        usuarioId: userId,
       });
       return updated;
     });
   }
 
   async completeAudit(auditId: string, userId: string) {
-    const audit = await this.prisma.audit.findUnique({ where: { id: auditId } });
-    if (!audit) throw new NotFoundException("Audit not found");
-    if (audit.status !== AuditStatus.WAITING_FOR_ISSUES) {
-      throw new BadRequestException("Audit must be WAITING_FOR_ISSUES to complete");
+    const audit = await this.prisma.fatoAuditoria.findUnique({
+      where: { id: auditId },
+    });
+    if (!audit) throw new NotFoundException('Audit not found');
+    if (audit.status !== StatusAuditoria.aguardando_apontamentos) {
+      throw new BadRequestException(
+        'Audit must be aguardando_apontamentos to complete',
+      );
     }
 
-    const ncWithoutConstruflow = await this.prisma.auditItem.findFirst({
+    const ncWithoutConstruflow = await this.prisma.fatoAuditoriaItem.findFirst({
       where: {
-        auditId,
-        status: AuditItemStatus.NONCONFORMING,
-        OR: [{ construflowRef: null }, { construflowRef: "" }],
+        auditoriaId: auditId,
+        status: StatusItemAuditoria.nao_conforme,
+        OR: [
+          { codigoConstruflow: null },
+          { codigoConstruflow: '' },
+        ],
       },
     });
     if (ncWithoutConstruflow) {
-      throw new BadRequestException("All NONCONFORMING items must have Construflow reference before completing");
+      throw new BadRequestException(
+        'All nao_conforme items must have Construflow reference before completing',
+      );
     }
 
     return this.prisma.$transaction(async (tx) => {
-      const updated = await tx.audit.update({
+      const updated = await tx.fatoAuditoria.update({
         where: { id: auditId },
-        data: { status: AuditStatus.COMPLETED, endDate: new Date() },
-      });
-      await tx.auditLog.create({
         data: {
-          userId,
-          auditId,
-          action: "COMPLETE_AUDIT",
-          before: { status: audit.status },
-          after: { status: updated.status },
+          status: StatusAuditoria.concluida,
+          dataConclusao: new Date(),
         },
+      });
+      await this.writeHistorio(tx, {
+        tabelaNome: 'fato_auditorias',
+        registroId: auditId,
+        campoNome: 'status',
+        valorAnterior: audit.status,
+        valorNovo: updated.status,
+        acao: AcaoHistorico.CONCLUIR_AUDITORIA,
+        usuarioId: userId,
       });
       return updated;
     });
   }
 
   async cancelAudit(auditId: string, userId: string, reason?: string | null) {
-    const audit = await this.prisma.audit.findUnique({ where: { id: auditId } });
-    if (!audit) throw new NotFoundException("Audit not found");
-    if (audit.status === AuditStatus.CANCELED) {
-      throw new BadRequestException("Audit is already canceled");
+    const audit = await this.prisma.fatoAuditoria.findUnique({
+      where: { id: auditId },
+    });
+    if (!audit) throw new NotFoundException('Audit not found');
+    if (audit.status === StatusAuditoria.cancelada) {
+      throw new BadRequestException('Audit is already canceled');
     }
 
     return this.prisma.$transaction(async (tx) => {
-      const updated = await tx.audit.update({
+      const updated = await tx.fatoAuditoria.update({
         where: { id: auditId },
         data: {
-          status: AuditStatus.CANCELED,
-          canceledAt: new Date(),
-          canceledById: userId,
-          cancelReason: reason ?? null,
+          status: StatusAuditoria.cancelada,
+          canceladoEm: new Date(),
+          canceladoPorId: userId,
+          motivoCancelamento: reason ?? null,
         },
       });
-      await tx.auditLog.create({
-        data: {
-          userId,
-          auditId,
-          action: "CANCEL_AUDIT",
-          before: { status: audit.status },
-          after: { status: updated.status, cancelReason: reason },
-        },
+      await this.writeHistorio(tx, {
+        tabelaNome: 'fato_auditorias',
+        registroId: auditId,
+        campoNome: 'status',
+        valorAnterior: audit.status,
+        valorNovo: updated.status,
+        acao: AcaoHistorico.CANCELAR_AUDITORIA,
+        usuarioId: userId,
       });
       return updated;
     });
   }
 
   async addCustomItem(auditId: string, dto: AddCustomItemDto, userId: string) {
-    const audit = await this.prisma.audit.findUnique({ where: { id: auditId } });
-    if (!audit) throw new NotFoundException("Audit not found");
-    if (audit.status !== AuditStatus.IN_PROGRESS && audit.status !== AuditStatus.WAITING_FOR_ISSUES) {
-      throw new BadRequestException("Custom items can only be added when audit is IN_PROGRESS or WAITING_FOR_ISSUES");
+    const audit = await this.prisma.fatoAuditoria.findUnique({
+      where: { id: auditId },
+    });
+    if (!audit) throw new NotFoundException('Audit not found');
+    if (
+      audit.status !== StatusAuditoria.em_andamento &&
+      audit.status !== StatusAuditoria.aguardando_apontamentos
+    ) {
+      throw new BadRequestException(
+        'Custom items can only be added when audit is em_andamento or aguardando_apontamentos',
+      );
     }
 
-    const discipline = await this.prisma.discipline.findUnique({ where: { id: dto.disciplineId } });
-    if (!discipline) throw new NotFoundException("Discipline not found");
-    if (dto.categoryId) {
-      const cat = await this.prisma.category.findUnique({ where: { id: dto.categoryId } });
-      if (!cat || cat.disciplineId !== dto.disciplineId) throw new NotFoundException("Category not found or does not belong to discipline");
-    }
+    const discipline = await this.prisma.dimDisciplina.findUnique({
+      where: { id: dto.disciplineId },
+    });
+    if (!discipline) throw new NotFoundException('Discipline not found');
+
+    const categoriaId = dto.categoryId ?? null;
+    if (!categoriaId)
+      throw new BadRequestException('categoryId is required for custom item');
+    const cat = await this.prisma.dimCategoria.findUnique({
+      where: { id: categoriaId },
+    });
+    if (!cat || cat.disciplinaId !== dto.disciplineId)
+      throw new NotFoundException(
+        'Category not found or does not belong to discipline',
+      );
+
+    const peso = dto.weight ?? 1;
+    const pontosMaximo = dto.maxPoints ?? 10;
 
     return this.prisma.$transaction(async (tx) => {
-      const custom = await tx.auditCustomItem.create({
+      const item = await tx.fatoAuditoriaItem.create({
         data: {
-          auditId,
-          disciplineId: dto.disciplineId,
-          categoryId: dto.categoryId ?? null,
-          description: dto.description,
-          weight: dto.weight ?? null,
-          maxPoints: dto.maxPoints ?? null,
-          createdById: userId,
+          auditoriaId: auditId,
+          categoriaId,
+          disciplinaId: dto.disciplineId,
+          itemVerificacaoSnapshot: dto.description,
+          pesoSnapshot: peso,
+          pontosMaximoSnapshot: pontosMaximo,
+          tipoItem: 'personalizado',
         },
       });
-      const item = await tx.auditItem.create({
+
+      await tx.tblItemPersonalizadoSalvo.create({
         data: {
-          auditId,
-          customItemId: custom.id,
-          checklistItemId: null,
+          auditoriaItemId: item.id,
+          disciplinaId: dto.disciplineId,
+          categoriaId,
+          itemVerificacao: dto.description,
+          peso,
+          pontosMaximo,
+          criadoPorId: userId,
         },
       });
-      await tx.auditLog.create({
-        data: {
-          userId,
-          auditId,
-          auditItemId: item.id,
-          action: "ADD_CUSTOM_ITEM",
-          after: { customItemId: custom.id, description: dto.description },
-        },
+
+      await this.writeHistorio(tx, {
+        tabelaNome: 'fato_auditoria_itens',
+        registroId: item.id,
+        campoNome: 'tipoItem',
+        valorNovo: 'personalizado',
+        acao: AcaoHistorico.ADICIONAR_ITEM_PERSONALIZADO,
+        usuarioId: userId,
       });
-      return { customItem: custom, auditItem: item };
+
+      return { auditItem: item };
     });
   }
 
-  async updateItem(auditId: string, itemId: string, dto: UpdateAuditItemDto, userId: string) {
-    const item = await this.prisma.auditItem.findFirst({
-      where: { id: itemId, auditId },
-      include: { audit: true },
+  async updateItem(
+    auditId: string,
+    itemId: string,
+    dto: UpdateAuditItemDto,
+    userId: string,
+  ) {
+    const item = await this.prisma.fatoAuditoriaItem.findFirst({
+      where: { id: itemId, auditoriaId: auditId },
+      include: { auditoria: true },
     });
-    if (!item) throw new NotFoundException("Audit item not found");
-    if (item.isLocked) throw new BadRequestException("Item is locked");
+    if (!item) throw new NotFoundException('Audit item not found');
 
     const nextStatus = dto.status ?? item.status;
-    const nextEvidenceText = dto.evidenceText === undefined ? item.evidenceText : dto.evidenceText;
+    const nextEvidenceText =
+      dto.evidenceText === undefined
+        ? item.evidenciaObservacao
+        : dto.evidenceText;
     const nextNextReviewAt =
       dto.nextReviewAt === undefined
-        ? item.nextReviewAt
+        ? item.proximaRevisao
         : dto.nextReviewAt
           ? new Date(dto.nextReviewAt)
           : null;
 
-    // BR-01: NONCONFORMING requires evidence and next review; Construflow can be filled in stand-by (required only at completeAudit)
-    if (nextStatus === AuditItemStatus.NONCONFORMING) {
+    if (nextStatus === StatusItemAuditoria.nao_conforme) {
       if (!nextEvidenceText || nextEvidenceText.trim().length === 0) {
-        throw new BadRequestException("Evidence is required for NONCONFORMING");
+        throw new BadRequestException(
+          'Evidence is required for nao_conforme',
+        );
       }
       if (!nextNextReviewAt) {
-        throw new BadRequestException("Next review date is required for NONCONFORMING");
+        throw new BadRequestException(
+          'Next review date is required for nao_conforme',
+        );
       }
     }
 
     return this.prisma.$transaction(async (tx) => {
-      const updated = await tx.auditItem.update({
+      const updated = await tx.fatoAuditoriaItem.update({
         where: { id: itemId },
         data: {
           status: dto.status ?? undefined,
-          severity: dto.severity === undefined ? undefined : dto.severity,
-          evidenceText: dto.evidenceText === undefined ? undefined : dto.evidenceText,
-          construflowRef: dto.construflowRef === undefined ? undefined : dto.construflowRef,
-          nextReviewAt: dto.nextReviewAt === undefined ? undefined : dto.nextReviewAt ? new Date(dto.nextReviewAt) : null,
-          pointsObtained: dto.pointsObtained === undefined ? undefined : dto.pointsObtained,
+          evidenciaObservacao:
+            dto.evidenceText === undefined ? undefined : dto.evidenceText,
+          codigoConstruflow:
+            dto.construflowRef === undefined ? undefined : dto.construflowRef,
+          proximaRevisao:
+            dto.nextReviewAt === undefined
+              ? undefined
+              : dto.nextReviewAt
+                ? new Date(dto.nextReviewAt)
+                : null,
+          pontosObtidos:
+            dto.pointsObtained === undefined
+              ? undefined
+              : Number(dto.pointsObtained ?? 0),
+          avaliadoPorId: userId,
+          avaliadoEm: new Date(),
         },
       });
 
-      await tx.auditLog.create({
-        data: {
-          userId,
-          auditId,
-          auditItemId: itemId,
-          action: "UPDATE_AUDIT_ITEM",
-          before: item,
-          after: updated,
-        },
+      await this.writeHistorio(tx, {
+        tabelaNome: 'fato_auditoria_itens',
+        registroId: itemId,
+        campoNome: 'status',
+        valorAnterior: item.status,
+        valorNovo: updated.status,
+        acao: AcaoHistorico.UPDATE,
+        usuarioId: userId,
       });
 
       return updated;
@@ -342,61 +471,45 @@ export class AuditsService {
   }
 
   async getScores(auditId: string) {
-    const audit = await this.prisma.audit.findUnique({ where: { id: auditId } });
-    if (!audit) throw new NotFoundException("Audit not found");
+    const audit = await this.prisma.fatoAuditoria.findUnique({
+      where: { id: auditId },
+    });
+    if (!audit) throw new NotFoundException('Audit not found');
 
-    const items = await this.prisma.auditItem.findMany({
-      where: { auditId },
+    const items = await this.prisma.fatoAuditoriaItem.findMany({
+      where: { auditoriaId: auditId },
       include: {
-        checklistItem: {
-          include: { category: { include: { discipline: true } } },
+        disciplina: true,
+        templateItem: {
+          include: { categoria: { include: { disciplina: true } } },
         },
-        customItem: { include: { discipline: true, category: true } },
+        categoria: { include: { disciplina: true } },
+        itensPersonalizados: true,
       },
     });
 
     const rows = items
-      .filter((it) => it.status !== AuditItemStatus.NA)
+      .filter((it) => it.status !== StatusItemAuditoria.nao_aplicavel)
       .map((it) => {
-        let disciplineName: string;
-        let categoryName: string;
-        let weight: number;
-        let maxPoints: number;
-
-        if (it.checklistItem) {
-          disciplineName = it.checklistItem.category.discipline.name;
-          categoryName = it.checklistItem.category.name;
-          weight = it.weightOverride ?? it.checklistItem.weight ?? 1;
-          maxPoints = it.maxPointsOverride ?? it.checklistItem.maxPoints ?? 10;
-        } else if (it.customItem) {
-          disciplineName = it.customItem.discipline.name;
-          categoryName = it.customItem.category?.name ?? "";
-          weight = it.weightOverride ?? it.customItem.weight ?? 1;
-          maxPoints = it.maxPointsOverride ?? it.customItem.maxPoints ?? 10;
-        } else {
-          disciplineName = "";
-          categoryName = "";
-          weight = 1;
-          maxPoints = 10;
-        }
+        const disciplineName =
+          it.disciplina?.nome ?? it.categoria?.disciplina?.nome ?? '';
+        const categoryName = it.categoria?.nome ?? '';
+        const weight = it.pesoSnapshot ?? 1;
+        const maxPoints = Number(it.pontosMaximoSnapshot ?? 10);
 
         let obtained = 0;
-        if (it.pointsObtained != null) {
-          obtained = clampInt(it.pointsObtained, 0, maxPoints);
+        if (it.pontosObtidos != null) {
+          obtained = clampInt(Number(it.pontosObtidos), 0, maxPoints);
         } else {
           switch (it.status) {
-            case AuditItemStatus.CONFORMING:
-            case AuditItemStatus.ALWAYS_CONFORMING:
-            case AuditItemStatus.RESOLVED:
+            case StatusItemAuditoria.conforme:
+            case StatusItemAuditoria.corrigido:
               obtained = maxPoints;
               break;
-            case AuditItemStatus.NONCONFORMING:
+            case StatusItemAuditoria.nao_conforme:
               obtained = 0;
               break;
-            case AuditItemStatus.OBSERVATION:
-              obtained = Math.round((maxPoints * OBSERVATION_PERCENT_DEFAULT) / 100);
-              break;
-            case AuditItemStatus.NOT_STARTED:
+            case StatusItemAuditoria.nao_iniciado:
             default:
               obtained = 0;
           }
@@ -412,7 +525,8 @@ export class AuditsService {
 
     const totalMax = rows.reduce((acc, r) => acc + r.weightedMax, 0);
     const totalObtained = rows.reduce((acc, r) => acc + r.weightedObtained, 0);
-    const overallScore = totalMax === 0 ? 0 : Math.round((totalObtained / totalMax) * 100);
+    const overallScore =
+      totalMax === 0 ? 0 : Math.round((totalObtained / totalMax) * 100);
 
     const byDiscipline = new Map<string, { max: number; obtained: number }>();
     const byCategory = new Map<string, { max: number; obtained: number }>();
@@ -436,14 +550,16 @@ export class AuditsService {
         totalMax,
         totalObtained,
       },
-      byDiscipline: Array.from(byDiscipline.entries()).map(([discipline, v]) => ({
-        discipline,
-        score: v.max === 0 ? 0 : Math.round((v.obtained / v.max) * 100),
-        totalMax: v.max,
-        totalObtained: v.obtained,
-      })),
+      byDiscipline: Array.from(byDiscipline.entries()).map(
+        ([discipline, v]) => ({
+          discipline,
+          score: v.max === 0 ? 0 : Math.round((v.obtained / v.max) * 100),
+          totalMax: v.max,
+          totalObtained: v.obtained,
+        }),
+      ),
       byCategory: Array.from(byCategory.entries()).map(([key, v]) => {
-        const [discipline, category] = key.split("::");
+        const [discipline, category] = key.split('::');
         return {
           discipline,
           category,

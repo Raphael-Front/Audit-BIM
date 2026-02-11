@@ -1,4 +1,4 @@
-import { IsInt, IsOptional, IsString, Min } from "class-validator";
+import { IsInt, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreatePhaseDto {
   @IsString()
@@ -9,4 +9,3 @@ export class CreatePhaseDto {
   @Min(0)
   order?: number;
 }
-

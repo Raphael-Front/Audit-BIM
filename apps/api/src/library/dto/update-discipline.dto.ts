@@ -1,4 +1,4 @@
-import { IsBoolean, IsInt, IsOptional, IsString, Min } from "class-validator";
+import { IsBoolean, IsInt, IsOptional, IsString, Min } from 'class-validator';
 
 export class UpdateDisciplineDto {
   @IsOptional()
@@ -14,4 +14,3 @@ export class UpdateDisciplineDto {
   @IsBoolean()
   active?: boolean;
 }
-

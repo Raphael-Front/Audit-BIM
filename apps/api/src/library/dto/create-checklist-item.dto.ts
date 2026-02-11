@@ -1,4 +1,4 @@
-import { IsInt, IsOptional, IsString, Min } from "class-validator";
+import { IsInt, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreateChecklistItemDto {
   @IsString()
@@ -24,4 +24,3 @@ export class CreateChecklistItemDto {
   @Min(1)
   maxPoints?: number;
 }
-
