@@ -14,7 +14,7 @@
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "format": "prettier -w .",
-    "db:generate": "npm run generate -w api",
+    "db:generate": "npm run generate -w @bim-audit/db",
     "db:migrate": "npm run migrate:deploy -w @bim-audit/db",
     "db:seed": "npm run seed -w @bim-audit/db",
     "postinstall": "npm run db:generate",

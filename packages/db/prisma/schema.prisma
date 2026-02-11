@@ -132,12 +132,12 @@ model DimDisciplina {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  categorias          DimCategoria[]
-  templates           TblChecklistTemplate[]
-  auditorias          FatoAuditoria[]
-  auditoriaItens      FatoAuditoriaItem[]
-  itensPersonalizados TblItemPersonalizadoSalvo[]
-  scoresPorDisciplina TblScorePorDisciplina[]
+  categoriasDisciplinas DimCategoriaDisciplina[]
+  templates             TblChecklistTemplate[]
+  auditorias            FatoAuditoria[]
+  auditoriaItens        FatoAuditoriaItem[]
+  itensPersonalizados   TblItemPersonalizadoSalvo[]
+  scoresPorDisciplina   TblScorePorDisciplina[]
 
   @@map("dim_disciplinas")
 }
@@ -147,27 +147,41 @@ model DimCategoria {
   codigo        String   @db.VarChar(50)
   nome          String   @db.VarChar(200)
   descricao     String?  @db.Text
-  disciplinaId  String?  @db.Uuid
   ordemExibicao Int      @default(0)
   ativo         Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  disciplina    DimDisciplina?  @relation(fields: [disciplinaId], references: [id], onDelete: Restrict)
+  disciplinas         DimCategoriaDisciplina[]
   templates           TblChecklistTemplate[]
   auditoriaItens      FatoAuditoriaItem[]
   itensPersonalizados TblItemPersonalizadoSalvo[]
   scoresPorCategoria  TblScorePorCategoria[]
 
-  @@index([disciplinaId])
   @@map("dim_categorias")
+}
+
+model DimCategoriaDisciplina {
+  categoriaId    String   @db.Uuid
+  disciplinaId  String   @db.Uuid
+  ordemExibicao Int     @default(0)
+  createdAt     DateTime @default(now())
+
+  categoria   DimCategoria   @relation(fields: [categoriaId], references: [id], onDelete: Cascade)
+  disciplina DimDisciplina  @relation(fields: [disciplinaId], references: [id], onDelete: Cascade)
+
+  @@id([categoriaId, disciplinaId])
+  @@index([disciplinaId])
+  @@index([categoriaId])
+  @@map("dim_categorias_disciplinas")
 }
 
 model DimUsuario {
   id            String    @id @default(uuid()) @db.Uuid
   email         String    @unique @db.VarChar(255)
   nomeCompleto  String    @db.VarChar(200)
-  senhaHash     String    @db.VarChar(255)
+  senhaHash     String?   @db.VarChar(255) // Nullable quando auth_user_id preenchido (Supabase Auth)
+  authUserId    String?   @unique @map("auth_user_id") @db.Uuid
   perfil        PerfilUsuario @default(auditor_bim)
   ativo         Boolean   @default(true)
   ultimoAcesso  DateTime?

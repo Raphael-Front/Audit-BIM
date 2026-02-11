@@ -1,5 +1,5 @@
 import { SetMetadata } from '@nestjs/common';
-import { PerfilUsuario } from '@prisma/client';
+import { PerfilUsuario } from '@bim-audit/db';
 
 export const ROLES_KEY = 'roles';
 export const Roles = (...roles: PerfilUsuario[]) =>

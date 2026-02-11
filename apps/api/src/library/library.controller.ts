@@ -8,7 +8,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { PerfilUsuario } from '@prisma/client';
+import { PerfilUsuario } from '@bim-audit/db';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../common/roles.decorator';
 import { RolesGuard } from '../common/roles.guard';
@@ -87,6 +87,19 @@ export class LibraryController {
     @Body() dto: UpdateCategoryDto,
   ) {
     return this.library.updateCategory(id, dto);
+  }
+
+  @Post('categories/:id/disciplines')
+  @Roles(PerfilUsuario.admin_bim)
+  linkCategoryToDiscipline(
+    @Param('id') id: string,
+    @Body() body: { disciplineId: string; order?: number },
+  ) {
+    return this.library.linkCategoryToDiscipline(
+      id,
+      body.disciplineId,
+      body.order,
+    );
   }
 
   @Get('checklist-items')

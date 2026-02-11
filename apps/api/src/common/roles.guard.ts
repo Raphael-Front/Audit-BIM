@@ -1,6 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { PerfilUsuario } from '@prisma/client';
+import { PerfilUsuario } from '@bim-audit/db';
 import { ROLES_KEY } from './roles.decorator';
 
 /** Mapeia valores legados do token (UserRole) para o novo PerfilUsuario. */

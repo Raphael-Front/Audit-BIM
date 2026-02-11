@@ -1,48 +1,49 @@
-# Supabase (BIM Audit Cloud)
+# Supabase (BIM Audit Cloud) — Modo Total
 
-Este projeto usa Supabase como backend:
+Este projeto usa **Supabase como backend completo** (Opção B):
 
-- **PostgreSQL**: tabelas em `supabase/migrations/` (001 a 005).
-- **Auth**: Supabase Auth; perfis em `user_profiles`.
+- **PostgreSQL**: schema Prisma (dim_obras, fato_auditorias, dim_usuarios, etc.).
+- **Auth**: Supabase Auth; usuários ligados a `dim_usuarios` via `auth_user_id`.
 - **Storage**: bucket `audit-evidencias` para evidências (JPG, PNG, PDF).
-- **Edge Functions**: `create-audit`, `update-audit-status`, `upload-evidence`, `calculate-score`, `send-notifications`, `sync-construflow`.
+- **RLS**: políticas por perfil (admin, auditor, visualizador).
 
 ## Configuração
 
 1. Crie um projeto no [Supabase](https://supabase.com).
-2. Defina no frontend (`.env.local`):
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-3. Para scripts de importação e Edge Functions:
-   - `SUPABASE_URL`
-   - `SUPABASE_SERVICE_ROLE_KEY`
+2. No `.env` (raiz):
+   - `VITE_SUPABASE_URL` — URL do projeto
+   - `VITE_SUPABASE_ANON_KEY` — chave anon (publishable)
+   - `SUPABASE_SERVICE_ROLE_KEY` — para scripts e migração
+3. Aplique as migrations `006_prisma_auth_rls.sql`, `007_storage_prisma.sql` e `ensure_dim_usuario_rpc` no SQL Editor ou via CLI.
 
-## Migrations
+## Migrations (schema Prisma)
 
-Com Supabase CLI (a partir da raiz do projeto):
+- **006_prisma_auth_rls.sql** — adiciona `auth_user_id` em dim_usuarios, funções `get_dim_usuario_id()` e `get_user_role()`, RLS em todas as tabelas.
+- **007_storage_prisma.sql** — bucket e políticas de storage.
+- **ensure_dim_usuario** — RPC para criar `dim_usuarios` a partir de novos usuários Supabase Auth.
 
-```bash
-supabase link --project-ref <seu-project-ref>
-supabase db push
-```
+## Migração de usuários existentes
 
-Ou aplique os SQL em `supabase/migrations/` manualmente no SQL Editor do dashboard.
-
-## Edge Functions
-
-Deploy (Supabase CLI):
+Se você já tem `dim_usuarios` (ex.: via API/Prisma):
 
 ```bash
-supabase functions deploy create-audit --no-verify-jwt
-supabase functions deploy update-audit-status
-supabase functions deploy upload-evidence
-supabase functions deploy calculate-score
-supabase functions deploy send-notifications
-supabase functions deploy sync-construflow
+npx tsx scripts/migrate-users-supabase.ts
 ```
 
-Recomenda-se `verify_jwt: true` em produção; use variáveis de ambiente no dashboard para as chaves.
+Cria um usuário em `auth.users` para cada `dim_usuario` sem `auth_user_id`, vincula e define uma senha temporária (o usuário deve trocar no primeiro login).
+
+## Frontend
+
+O frontend usa Supabase diretamente:
+
+- Auth: `supabase.auth.signInWithPassword` / `signOut`
+- Dados: `supabase.from('dim_obras')`, `fato_auditorias`, etc.
+- Não é mais necessária a API NestJS para o fluxo principal.
 
 ## Storage
 
-O bucket `audit-evidencias` é criado pela migration 004. Estrutura de path: `{obra_id}/auditorias/{auditoria_id}/evidencias/{arquivo}`.
+Path sugerido: `audit-evidencias/{auditoriaItemId}/{filename}`.
+
+## Edge Functions (opcional)
+
+As Edge Functions existentes (`create-audit`, `upload-evidence`, etc.) podem ser adaptadas para o schema Prisma e deployadas com `supabase functions deploy`.

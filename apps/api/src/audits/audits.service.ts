@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { AcaoHistorico, StatusAuditoria, StatusItemAuditoria } from '@prisma/client';
+import { AcaoHistorico, StatusAuditoria, StatusItemAuditoria } from '@bim-audit/db';
 import { PrismaService } from '../prisma/prisma.service';
 import { AddCustomItemDto } from './dto/add-custom-item.dto';
 import { CreateAuditDto } from './dto/create-audit.dto';
@@ -113,11 +113,11 @@ export class AuditsService {
       include: {
         templateItem: {
           include: {
-            categoria: { include: { disciplina: true } },
+            categoria: true,
             aplicabilidadeFases: { include: { fase: true } },
           },
         },
-        categoria: { include: { disciplina: true } },
+        categoria: true,
         disciplina: true,
         itensPersonalizados: true,
       },
@@ -147,7 +147,7 @@ export class AuditsService {
           some: { faseId: dto.auditPhaseId },
         },
       },
-      include: { categoria: { include: { disciplina: true } } },
+      include: { categoria: true },
       orderBy: [{ ordemExibicao: 'asc' }, { createdAt: 'asc' }],
     });
     if (templates.length === 0)
@@ -346,10 +346,15 @@ export class AuditsService {
     const categoriaId = dto.categoryId ?? null;
     if (!categoriaId)
       throw new BadRequestException('categoryId is required for custom item');
-    const cat = await this.prisma.dimCategoria.findUnique({
-      where: { id: categoriaId },
+    const link = await this.prisma.dimCategoriaDisciplina.findUnique({
+      where: {
+        categoriaId_disciplinaId: {
+          categoriaId: categoriaId,
+          disciplinaId: dto.disciplineId,
+        },
+      },
     });
-    if (!cat || cat.disciplinaId !== dto.disciplineId)
+    if (!link)
       throw new NotFoundException(
         'Category not found or does not belong to discipline',
       );
@@ -480,10 +485,8 @@ export class AuditsService {
       where: { auditoriaId: auditId },
       include: {
         disciplina: true,
-        templateItem: {
-          include: { categoria: { include: { disciplina: true } } },
-        },
-        categoria: { include: { disciplina: true } },
+        templateItem: { include: { categoria: true } },
+        categoria: true,
         itensPersonalizados: true,
       },
     });
@@ -491,8 +494,7 @@ export class AuditsService {
     const rows = items
       .filter((it) => it.status !== StatusItemAuditoria.nao_aplicavel)
       .map((it) => {
-        const disciplineName =
-          it.disciplina?.nome ?? it.categoria?.disciplina?.nome ?? '';
+        const disciplineName = it.disciplina?.nome ?? '';
         const categoryName = it.categoria?.nome ?? '';
         const weight = it.pesoSnapshot ?? 1;
         const maxPoints = Number(it.pontosMaximoSnapshot ?? 10);

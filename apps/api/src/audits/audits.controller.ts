@@ -8,7 +8,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { StatusAuditoria } from '@prisma/client';
+import { StatusAuditoria } from '@bim-audit/db';
 import type { AuthUser } from '../auth/types';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../common/current-user.decorator';

@@ -15,7 +15,7 @@ export function LoginPage() {
     setLoading(true);
     try {
       const { accessToken } = await login(email, password);
-      setToken(accessToken);
+      if (accessToken) setToken(accessToken);
       navigate("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Credenciais inválidas");

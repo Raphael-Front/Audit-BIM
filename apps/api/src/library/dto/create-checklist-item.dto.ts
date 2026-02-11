@@ -5,6 +5,9 @@ export class CreateChecklistItemDto {
   categoryId!: string;
 
   @IsString()
+  disciplineId!: string;
+
+  @IsString()
   auditPhaseId!: string;
 
   @IsOptional()

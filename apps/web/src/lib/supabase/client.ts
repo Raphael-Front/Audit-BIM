@@ -1,22 +1,15 @@
-/**
- * Stub: Supabase client not used in local/API mode.
- * Auth and data go through the NestJS API (lib/api.ts).
- * Keep for future Supabase migration.
- */
-export function createClient() {
-  return {
-    auth: {
-      getSession: () => Promise.resolve({ data: { session: null }, error: null }),
-      getUser: () => Promise.resolve({ data: { user: null }, error: null }),
-      signInWithPassword: () => Promise.resolve({ data: null, error: { message: "Use API login" } }),
-      signOut: () => Promise.resolve({ error: null }),
-      exchangeCodeForSession: () => Promise.resolve({ data: null, error: { message: "Use API login" } }),
-    },
-    from: () => ({
-      select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: null, error: null })), order: () => Promise.resolve({ data: [], error: null }) })),
-      insert: () => Promise.resolve({ data: null, error: { message: "Use API" } }),
-      update: () => ({ eq: () => Promise.resolve({ data: null, error: null }) }),
-    }),
-    channel: () => ({ on: () => ({ subscribe: () => ({}) }), removeChannel: () => {} }),
-  } as unknown as ReturnType<typeof import("@supabase/supabase-js").createClient>;
+import { createClient } from "@supabase/supabase-js";
+
+const url = import.meta.env.VITE_SUPABASE_URL ?? import.meta.env.NEXT_PUBLIC_SUPABASE_URL;
+const key = import.meta.env.VITE_SUPABASE_ANON_KEY ?? import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!url || !key) {
+  console.warn("VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY são obrigatórios para Supabase.");
+}
+
+export function createSupabaseClient() {
+  if (!url || !key) {
+    throw new Error("Configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no .env");
+  }
+  return createClient(url, key);
 }

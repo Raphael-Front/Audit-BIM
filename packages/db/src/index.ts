@@ -1,4 +1,14 @@
-import { PrismaClient } from "@prisma/client";
+import {
+  PrismaClient,
+  PerfilUsuario,
+  OrigemTemplate,
+  StatusAuditoria,
+  TipoItemAuditoria,
+  StatusItemAuditoria,
+  AcaoHistorico,
+  TipoRelatorio,
+  FormatoRelatorio,
+} from "@prisma/client";
 
 let prisma: PrismaClient | undefined;
 
@@ -7,5 +17,15 @@ export function getPrismaClient() {
   return prisma;
 }
 
-export { PrismaClient };
+export {
+  PrismaClient,
+  PerfilUsuario,
+  OrigemTemplate,
+  StatusAuditoria,
+  TipoItemAuditoria,
+  StatusItemAuditoria,
+  AcaoHistorico,
+  TipoRelatorio,
+  FormatoRelatorio,
+};
 

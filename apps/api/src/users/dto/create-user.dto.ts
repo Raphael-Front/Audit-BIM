@@ -1,4 +1,4 @@
-import { PerfilUsuario } from '@prisma/client';
+import { PerfilUsuario } from '@bim-audit/db';
 import {
   IsEmail,
   IsEnum,

@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppShell } from "@/components/layout/AppShell";
@@ -22,8 +23,22 @@ import { AuditsPage } from "@/pages/AuditsPage";
 import { AuditDetailPage } from "@/pages/AuditDetailPage";
 
 function HomeRedirect() {
-  const token = typeof window !== "undefined" ? document.cookie.match(/auth-token=([^;]+)/) : null;
-  return token ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />;
+  const [dest, setDest] = useState<"/dashboard" | "/login" | null>(null);
+  useEffect(() => {
+    import("@/lib/supabase/client").then(({ createSupabaseClient }) => {
+      createSupabaseClient().auth.getSession().then(({ data }) => {
+        setDest(data.session ? "/dashboard" : "/login");
+      });
+    });
+  }, []);
+  if (dest === null) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-sm text-gray-500">Carregando…</p>
+      </div>
+    );
+  }
+  return <Navigate to={dest} replace />;
 }
 
 function DashboardLayout({ children }: { children: React.ReactNode }) {

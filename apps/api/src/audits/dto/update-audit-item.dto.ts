@@ -1,4 +1,4 @@
-import { StatusItemAuditoria } from '@prisma/client';
+import { StatusItemAuditoria } from '@bim-audit/db';
 import {
   IsDateString,
   IsEnum,

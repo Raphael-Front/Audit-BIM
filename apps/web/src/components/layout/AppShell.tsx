@@ -12,8 +12,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
 
-  function signOut() {
-    logout();
+  async function signOut() {
+    await logout();
     navigate("/login");
   }
 

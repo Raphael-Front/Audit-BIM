@@ -87,27 +87,67 @@ async function main() {
   const ele = disciplinas[3];
   const inc = disciplinas[4];
 
-  // --- DIM_CATEGORIAS (10+) ---
-  const catArq1 = await prisma.dimCategoria.findFirst({ where: { disciplinaId: arq.id, codigo: "ARQ-GER" } })
-    ?? await prisma.dimCategoria.create({ data: { codigo: "ARQ-GER", nome: "Arquitetura - Geral", disciplinaId: arq.id, ordemExibicao: 1, ativo: true } });
-  const catArq2 = await prisma.dimCategoria.findFirst({ where: { disciplinaId: arq.id, codigo: "ARQ-PAV" } })
-    ?? await prisma.dimCategoria.create({ data: { codigo: "ARQ-PAV", nome: "Arquitetura - Pavimentos", disciplinaId: arq.id, ordemExibicao: 2, ativo: true } });
-  const catEst1 = await prisma.dimCategoria.findFirst({ where: { disciplinaId: est.id, codigo: "EST-LAU" } })
-    ?? await prisma.dimCategoria.create({ data: { codigo: "EST-LAU", nome: "Estrutura - Lajes", disciplinaId: est.id, ordemExibicao: 1, ativo: true } });
-  const catEst2 = await prisma.dimCategoria.findFirst({ where: { disciplinaId: est.id, codigo: "EST-PIL" } })
-    ?? await prisma.dimCategoria.create({ data: { codigo: "EST-PIL", nome: "Estrutura - Pilares", disciplinaId: est.id, ordemExibicao: 2, ativo: true } });
-  const catHid1 = await prisma.dimCategoria.findFirst({ where: { disciplinaId: hid.id, codigo: "HID-AGUA" } })
-    ?? await prisma.dimCategoria.create({ data: { codigo: "HID-AGUA", nome: "Hidráulica - Água fria", disciplinaId: hid.id, ordemExibicao: 1, ativo: true } });
-  const catHid2 = await prisma.dimCategoria.findFirst({ where: { disciplinaId: hid.id, codigo: "HID-ESG" } })
-    ?? await prisma.dimCategoria.create({ data: { codigo: "HID-ESG", nome: "Hidráulica - Esgoto", disciplinaId: hid.id, ordemExibicao: 2, ativo: true } });
-  const catEle1 = await prisma.dimCategoria.findFirst({ where: { disciplinaId: ele.id, codigo: "ELE-LUM" } })
-    ?? await prisma.dimCategoria.create({ data: { codigo: "ELE-LUM", nome: "Elétrica - Iluminação", disciplinaId: ele.id, ordemExibicao: 1, ativo: true } });
-  const catEle2 = await prisma.dimCategoria.findFirst({ where: { disciplinaId: ele.id, codigo: "ELE-DAD" } })
-    ?? await prisma.dimCategoria.create({ data: { codigo: "ELE-DAD", nome: "Elétrica - Dados", disciplinaId: ele.id, ordemExibicao: 2, ativo: true } });
-  const catInc1 = await prisma.dimCategoria.findFirst({ where: { disciplinaId: inc.id, codigo: "INC-SPDA" } })
-    ?? await prisma.dimCategoria.create({ data: { codigo: "INC-SPDA", nome: "Incêndio - SPDA", disciplinaId: inc.id, ordemExibicao: 1, ativo: true } });
-  const catInc2 = await prisma.dimCategoria.findFirst({ where: { disciplinaId: inc.id, codigo: "INC-HIDR" } })
-    ?? await prisma.dimCategoria.create({ data: { codigo: "INC-HIDR", nome: "Incêndio - Hidrantes", disciplinaId: inc.id, ordemExibicao: 2, ativo: true } });
+  // --- DIM_CATEGORIAS (10+) + vínculo com disciplinas ---
+  const catArq1 = await prisma.dimCategoria.findFirst({ where: { codigo: "ARQ-GER" } })
+    ?? (await (async () => {
+      const c = await prisma.dimCategoria.create({ data: { codigo: "ARQ-GER", nome: "Arquitetura - Geral", ordemExibicao: 1, ativo: true } });
+      await prisma.dimCategoriaDisciplina.create({ data: { categoriaId: c.id, disciplinaId: arq.id, ordemExibicao: 1 } });
+      return c;
+    })());
+  const catArq2 = await prisma.dimCategoria.findFirst({ where: { codigo: "ARQ-PAV" } })
+    ?? (await (async () => {
+      const c = await prisma.dimCategoria.create({ data: { codigo: "ARQ-PAV", nome: "Arquitetura - Pavimentos", ordemExibicao: 2, ativo: true } });
+      await prisma.dimCategoriaDisciplina.create({ data: { categoriaId: c.id, disciplinaId: arq.id, ordemExibicao: 2 } });
+      return c;
+    })());
+  const catEst1 = await prisma.dimCategoria.findFirst({ where: { codigo: "EST-LAU" } })
+    ?? (await (async () => {
+      const c = await prisma.dimCategoria.create({ data: { codigo: "EST-LAU", nome: "Estrutura - Lajes", ordemExibicao: 1, ativo: true } });
+      await prisma.dimCategoriaDisciplina.create({ data: { categoriaId: c.id, disciplinaId: est.id, ordemExibicao: 1 } });
+      return c;
+    })());
+  const catEst2 = await prisma.dimCategoria.findFirst({ where: { codigo: "EST-PIL" } })
+    ?? (await (async () => {
+      const c = await prisma.dimCategoria.create({ data: { codigo: "EST-PIL", nome: "Estrutura - Pilares", ordemExibicao: 2, ativo: true } });
+      await prisma.dimCategoriaDisciplina.create({ data: { categoriaId: c.id, disciplinaId: est.id, ordemExibicao: 2 } });
+      return c;
+    })());
+  const catHid1 = await prisma.dimCategoria.findFirst({ where: { codigo: "HID-AGUA" } })
+    ?? (await (async () => {
+      const c = await prisma.dimCategoria.create({ data: { codigo: "HID-AGUA", nome: "Hidráulica - Água fria", ordemExibicao: 1, ativo: true } });
+      await prisma.dimCategoriaDisciplina.create({ data: { categoriaId: c.id, disciplinaId: hid.id, ordemExibicao: 1 } });
+      return c;
+    })());
+  const catHid2 = await prisma.dimCategoria.findFirst({ where: { codigo: "HID-ESG" } })
+    ?? (await (async () => {
+      const c = await prisma.dimCategoria.create({ data: { codigo: "HID-ESG", nome: "Hidráulica - Esgoto", ordemExibicao: 2, ativo: true } });
+      await prisma.dimCategoriaDisciplina.create({ data: { categoriaId: c.id, disciplinaId: hid.id, ordemExibicao: 2 } });
+      return c;
+    })());
+  const catEle1 = await prisma.dimCategoria.findFirst({ where: { codigo: "ELE-LUM" } })
+    ?? (await (async () => {
+      const c = await prisma.dimCategoria.create({ data: { codigo: "ELE-LUM", nome: "Elétrica - Iluminação", ordemExibicao: 1, ativo: true } });
+      await prisma.dimCategoriaDisciplina.create({ data: { categoriaId: c.id, disciplinaId: ele.id, ordemExibicao: 1 } });
+      return c;
+    })());
+  const catEle2 = await prisma.dimCategoria.findFirst({ where: { codigo: "ELE-DAD" } })
+    ?? (await (async () => {
+      const c = await prisma.dimCategoria.create({ data: { codigo: "ELE-DAD", nome: "Elétrica - Dados", ordemExibicao: 2, ativo: true } });
+      await prisma.dimCategoriaDisciplina.create({ data: { categoriaId: c.id, disciplinaId: ele.id, ordemExibicao: 2 } });
+      return c;
+    })());
+  const catInc1 = await prisma.dimCategoria.findFirst({ where: { codigo: "INC-SPDA" } })
+    ?? (await (async () => {
+      const c = await prisma.dimCategoria.create({ data: { codigo: "INC-SPDA", nome: "Incêndio - SPDA", ordemExibicao: 1, ativo: true } });
+      await prisma.dimCategoriaDisciplina.create({ data: { categoriaId: c.id, disciplinaId: inc.id, ordemExibicao: 1 } });
+      return c;
+    })());
+  const catInc2 = await prisma.dimCategoria.findFirst({ where: { codigo: "INC-HIDR" } })
+    ?? (await (async () => {
+      const c = await prisma.dimCategoria.create({ data: { codigo: "INC-HIDR", nome: "Incêndio - Hidrantes", ordemExibicao: 2, ativo: true } });
+      await prisma.dimCategoriaDisciplina.create({ data: { categoriaId: c.id, disciplinaId: inc.id, ordemExibicao: 2 } });
+      return c;
+    })());
 
   const categorias = [catArq1, catArq2, catEst1, catEst2, catHid1, catHid2, catEle1, catEle2, catInc1, catInc2];
 

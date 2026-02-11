@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAuditPhaseDto } from './dto/create-audit-phase.dto';
 import { CreateCategoryDto } from './dto/create-category.dto';
@@ -81,12 +81,27 @@ export class LibraryService {
     });
   }
 
-  listCategories(disciplineId?: string) {
-    return this.prisma.dimCategoria.findMany({
-      where: disciplineId ? { disciplinaId: disciplineId } : undefined,
-      orderBy: [{ ordemExibicao: 'asc' }, { nome: 'asc' }],
-      include: { disciplina: true },
+  async listCategories(disciplineId?: string) {
+    if (!disciplineId) {
+      return this.prisma.dimCategoria.findMany({
+        where: { ativo: true },
+        orderBy: [{ ordemExibicao: 'asc' }, { nome: 'asc' }],
+        include: { disciplinas: true },
+      });
+    }
+    const links = await this.prisma.dimCategoriaDisciplina.findMany({
+      where: { disciplinaId },
+      orderBy: { ordemExibicao: 'asc' },
+      include: { categoria: true },
     });
+    return links
+      .filter((l) => l.categoria.ativo)
+      .map((l) => ({
+        ...l.categoria,
+        disciplinaId,
+        ordemExibicao: l.ordemExibicao,
+        disciplina: { id: disciplineId },
+      }));
   }
 
   async createCategory(dto: CreateCategoryDto) {
@@ -96,13 +111,61 @@ export class LibraryService {
     if (!d) throw new NotFoundException('Discipline not found');
     const codigo =
       dto.name.replace(/\s+/g, '_').toUpperCase().slice(0, 50) || 'CAT';
-    return this.prisma.dimCategoria.create({
+    const categoria = await this.prisma.dimCategoria.create({
       data: {
-        disciplinaId: dto.disciplineId,
         nome: dto.name,
         codigo,
         ordemExibicao: dto.order ?? 0,
       },
+    });
+    await this.prisma.dimCategoriaDisciplina.create({
+      data: {
+        categoriaId: categoria.id,
+        disciplinaId: dto.disciplineId,
+        ordemExibicao: dto.order ?? 0,
+      },
+    });
+    return this.prisma.dimCategoria.findUnique({
+      where: { id: categoria.id },
+      include: {
+        disciplinas: { include: { disciplina: true } },
+      },
+    });
+  }
+
+  async linkCategoryToDiscipline(
+    categoryId: string,
+    disciplineId: string,
+    order?: number,
+  ) {
+    const [cat, disc] = await Promise.all([
+      this.prisma.dimCategoria.findUnique({ where: { id: categoryId } }),
+      this.prisma.dimDisciplina.findUnique({ where: { id: disciplineId } }),
+    ]);
+    if (!cat) throw new NotFoundException('Category not found');
+    if (!disc) throw new NotFoundException('Discipline not found');
+    const existing = await this.prisma.dimCategoriaDisciplina.findUnique({
+      where: {
+        categoriaId_disciplinaId: { categoriaId: categoryId, disciplinaId },
+      },
+    });
+    if (existing)
+      throw new BadRequestException('Category already linked to this discipline');
+    const nextOrder =
+      order ??
+      (await this.prisma.dimCategoriaDisciplina
+        .aggregate({
+          where: { disciplinaId },
+          _max: { ordemExibicao: true },
+        })
+        .then((r) => (r._max.ordemExibicao ?? -1) + 1));
+    return this.prisma.dimCategoriaDisciplina.create({
+      data: {
+        categoriaId: categoryId,
+        disciplinaId,
+        ordemExibicao: nextOrder,
+      },
+      include: { categoria: true, disciplina: true },
     });
   }
 
@@ -143,25 +206,31 @@ export class LibraryService {
       where,
       orderBy: [{ ordemExibicao: 'desc' }, { createdAt: 'desc' }],
       include: {
-        categoria: { include: { disciplina: true } },
+        categoria: true,
+        disciplina: true,
         aplicabilidadeFases: { include: { fase: true } },
       },
     });
   }
 
   async createChecklistItem(dto: CreateChecklistItemDto) {
-    const [cat, phase] = await Promise.all([
-      this.prisma.dimCategoria.findUnique({ where: { id: dto.categoryId } }),
+    const [link, phase] = await Promise.all([
+      this.prisma.dimCategoriaDisciplina.findUnique({
+        where: {
+          categoriaId_disciplinaId: {
+            categoriaId: dto.categoryId,
+            disciplinaId: dto.disciplineId,
+          },
+        },
+      }),
       this.prisma.dimFase.findUnique({ where: { id: dto.auditPhaseId } }),
     ]);
-    if (!cat) throw new NotFoundException('Category not found');
+    if (!link) throw new NotFoundException('Category not linked to this discipline');
     if (!phase) throw new NotFoundException('Audit phase not found');
 
-    if (!cat.disciplinaId)
-      throw new NotFoundException('Category must belong to a discipline');
     const template = await this.prisma.tblChecklistTemplate.create({
       data: {
-        disciplinaId: cat.disciplinaId,
+        disciplinaId: dto.disciplineId,
         categoriaId: dto.categoryId,
         itemVerificacao: dto.description,
         peso: dto.weight ?? 1,
@@ -177,7 +246,8 @@ export class LibraryService {
     return this.prisma.tblChecklistTemplate.findUnique({
       where: { id: template.id },
       include: {
-        categoria: { include: { disciplina: true } },
+        categoria: true,
+        disciplina: true,
         aplicabilidadeFases: { include: { fase: true } },
       },
     });
