@@ -2,7 +2,7 @@ import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Container } from "@/components/layout/Container";
 import { useState, useEffect } from "react";
-import { auditItems, auditUpdateItem, type AuditItemRow } from "@/lib/api";
+import { auditGet, auditItems, auditUpdateItem, auditFinishVerification, auditComplete, type AuditDetail, type AuditItemRow } from "@/lib/api";
 
 const STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: "NOT_STARTED", label: "Pendente" },
@@ -18,6 +18,11 @@ export function ExecucaoPage() {
   const [evidenceText, setEvidenceText] = useState<Record<string, string>>({});
   const [construflowRef, setConstruflowRef] = useState<Record<string, string>>({});
 
+  const { data: audit } = useQuery({
+    queryKey: ["audit", id],
+    queryFn: () => auditGet(id!),
+    enabled: !!id,
+  });
   const { data: itens, isLoading } = useQuery({
     queryKey: ["audit-items", id],
     queryFn: () => auditItems(id!),
@@ -42,6 +47,20 @@ export function ExecucaoPage() {
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["audit-items", id] }),
   });
+  const finishVerification = useMutation({
+    mutationFn: () => auditFinishVerification(id!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["audit", id] });
+      queryClient.invalidateQueries({ queryKey: ["audit-items", id] });
+    },
+  });
+  const completeAudit = useMutation({
+    mutationFn: () => auditComplete(id!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["audit", id] });
+      queryClient.invalidateQueries({ queryKey: ["audit-items", id] });
+    },
+  });
 
   function handleStatusChange(itemId: string, status: string) {
     updateItem.mutate({ itemId, status, evidenceText: evidenceText[itemId], construflowRef: construflowRef[itemId] || undefined });
@@ -63,6 +82,21 @@ export function ExecucaoPage() {
     return item.checklistItem?.description ?? item.customItem?.description ?? item.id;
   }
 
+  const status = (audit as AuditDetail)?.status as string | undefined;
+  const pendentes = itens?.filter((i) => i.status === "NOT_STARTED").length ?? 0;
+  const ncsIncompletos =
+    itens?.filter(
+      (i) =>
+        i.status === "NONCONFORMING" &&
+        (!(i.construflowRef && i.construflowRef.trim()) || !(i.evidenceText && i.evidenceText.trim()))
+    ) ?? [];
+  const podeFinalizar =
+    status &&
+    (status === "nao_iniciado" || status === "em_andamento") &&
+    pendentes === 0 &&
+    (itens?.length ?? 0) > 0;
+  const podeConcluir = status === "aguardando_apontamentos" && ncsIncompletos.length === 0;
+
   if (isLoading || !itens) {
     return (
       <Container>
@@ -78,6 +112,36 @@ export function ExecucaoPage() {
       </div>
       <h1 className="text-2xl font-semibold text-gray-900">Execução</h1>
       <p className="text-sm text-gray-500">Avalie cada item e salve. Alterações são persistidas automaticamente.</p>
+
+      {status === "aguardando_apontamentos" && (
+        <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          Preencha o Construflow ID e evidência/observações em cada item não conforme e depois clique em Concluir auditoria.
+        </p>
+      )}
+
+      {(podeFinalizar || podeConcluir) && (
+        <div className="mt-6 flex flex-wrap gap-3">
+          {podeFinalizar && (
+            <button
+              onClick={() => finishVerification.mutate()}
+              disabled={finishVerification.isPending}
+              className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            >
+              {finishVerification.isPending ? "Processando..." : "Finalizar verificação"}
+            </button>
+          )}
+          {podeConcluir && (
+            <button
+              onClick={() => completeAudit.mutate()}
+              disabled={completeAudit.isPending}
+              className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+            >
+              {completeAudit.isPending ? "Processando..." : "Concluir auditoria"}
+            </button>
+          )}
+        </div>
+      )}
+
       <div className="mt-8 space-y-6">
         {itens.map((i) => (
           <div key={i.id} className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">

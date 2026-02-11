@@ -1,7 +1,7 @@
 import { useParams, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Container } from "@/components/layout/Container";
-import { auditGet, auditItems, type AuditDetail, type AuditItemRow } from "@/lib/api";
+import { auditGet, auditItems, auditFinishVerification, auditComplete, auditCancel, type AuditDetail, type AuditItemRow } from "@/lib/api";
 
 const statusLabel: Record<string, string> = {
   NOT_STARTED: "Pendente",
@@ -9,14 +9,16 @@ const statusLabel: Record<string, string> = {
   NONCONFORMING: "Não conforme",
   OBSERVATION: "Observação",
   NA: "N/A",
-  IN_PROGRESS: "Em andamento",
-  COMPLETED: "Concluída",
-  WAITING_FOR_ISSUES: "Aguardando apontamentos",
-  CANCELED: "Cancelada",
+  nao_iniciado: "Não iniciado",
+  em_andamento: "Em andamento",
+  aguardando_apontamentos: "Aguardando apontamentos",
+  concluida: "Concluída",
+  cancelada: "Cancelada",
 };
 
 export function AuditoriaDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const queryClient = useQueryClient();
   const { data: audit, isError } = useQuery({
     queryKey: ["audit", id],
     queryFn: () => auditGet(id!),
@@ -26,6 +28,19 @@ export function AuditoriaDetailPage() {
     queryKey: ["audit-items", id],
     queryFn: () => auditItems(id!),
     enabled: !!id,
+  });
+
+  const finishVerification = useMutation({
+    mutationFn: () => auditFinishVerification(id!),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["audit", id] }),
+  });
+  const completeAudit = useMutation({
+    mutationFn: () => auditComplete(id!),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["audit", id] }),
+  });
+  const cancelAudit = useMutation({
+    mutationFn: () => auditCancel(id!),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["audit", id] }),
   });
 
   if (isError || (id && !audit)) {
@@ -39,8 +54,15 @@ export function AuditoriaDetailPage() {
 
   if (!audit) return null;
 
+  const status = (audit as AuditDetail).status as string;
   const ncCount = (itens as AuditItemRow[]).filter((i) => i.status === "NONCONFORMING").length;
   const pendentes = (itens as AuditItemRow[]).filter((i) => i.status === "NOT_STARTED").length;
+  const ncsIncompletos = (itens as AuditItemRow[]).filter(
+    (i) => i.status === "NONCONFORMING" && (!(i.construflowRef && i.construflowRef.trim()) || !(i.evidenceText && i.evidenceText.trim()))
+  );
+  const podeFinalizar = (status === "nao_iniciado" || status === "em_andamento") && pendentes === 0 && (itens as AuditItemRow[]).length > 0;
+  const podeConcluir = status === "aguardando_apontamentos" && ncsIncompletos.length === 0;
+  const podeCancelar = status === "nao_iniciado" || status === "em_andamento" || status === "aguardando_apontamentos";
 
   return (
     <Container>
@@ -52,13 +74,56 @@ export function AuditoriaDetailPage() {
         <p className="text-sm text-gray-500">
           {(audit as AuditDetail).work?.name ?? ""} • {(audit as AuditDetail).phase?.name ?? ""} • {(audit as AuditDetail).discipline?.name ?? ""} • {(audit as AuditDetail).auditPhase?.name ?? ""}
         </p>
-        <div className="mt-4 flex flex-wrap gap-4">
-          <span className="rounded-full border px-3 py-1 text-xs font-medium">{statusLabel[(audit as AuditDetail).status] ?? (audit as AuditDetail).status}</span>
+        <div className="mt-4 flex flex-wrap items-center gap-4">
+          <span className="rounded-full border px-3 py-1 text-xs font-medium">{statusLabel[status] ?? status}</span>
           <span className="text-sm text-gray-500">{ncCount} NC(s) • {pendentes} pendente(s)</span>
+          <button
+            onClick={() => {
+              if (podeFinalizar) finishVerification.mutate();
+              else if (podeConcluir && window.confirm("Concluir esta auditoria?")) completeAudit.mutate();
+            }}
+            disabled={(!podeFinalizar && !podeConcluir) || finishVerification.isPending || completeAudit.isPending}
+            title={
+              pendentes > 0
+                ? "Avalie todos os itens primeiro"
+                : ncsIncompletos.length > 0
+                  ? "Preencha Construflow ID e evidência nos itens não conformes"
+                  : status === "concluida"
+                    ? "Auditoria já concluída"
+                    : undefined
+            }
+            className={`ml-auto rounded-xl px-4 py-2 text-sm font-medium ${
+              podeFinalizar || podeConcluir
+                ? "bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
+                : "cursor-not-allowed bg-gray-200 text-gray-500"
+            }`}
+          >
+            {finishVerification.isPending || completeAudit.isPending
+              ? "Processando..."
+              : podeFinalizar
+                ? "Finalizar verificação"
+                : "Concluir auditoria"}
+          </button>
         </div>
+
+        {status === "aguardando_apontamentos" && ncsIncompletos.length > 0 && (
+          <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+            Preencha o Construflow ID e evidência/observações em cada item não conforme para poder concluir a auditoria.
+          </p>
+        )}
+
         <div className="mt-6 flex gap-3">
           <Link to={`/auditorias/${id}/execucao`} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:opacity-90">Execução</Link>
           <Link to={`/auditorias/${id}/ncs`} className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium hover:bg-gray-50">NCs</Link>
+          {podeCancelar && (
+            <button
+              onClick={() => window.confirm("Cancelar esta auditoria?") && cancelAudit.mutate()}
+              disabled={cancelAudit.isPending}
+              className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
+            >
+              {cancelAudit.isPending ? "Processando..." : "Cancelar auditoria"}
+            </button>
+          )}
         </div>
       </div>
       <div className="mt-8">

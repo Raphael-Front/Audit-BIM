@@ -8,12 +8,10 @@ import {
   worksList,
   worksPhases,
   libraryDisciplines,
-  libraryAuditPhases,
   libraryCategories,
   authMe,
   api,
   type WorkRow,
-  type AuditPhaseRow,
   type DisciplineRow,
   type CategoryRow,
 } from "@/lib/api";
@@ -22,14 +20,12 @@ export default function NewAuditoriaPage() {
   const [workId, setWorkId] = useState("");
   const [phaseId, setPhaseId] = useState("");
   const [disciplineId, setDisciplineId] = useState("");
-  const [auditPhaseId, setAuditPhaseId] = useState("");
   const [auditorId, setAuditorId] = useState("");
   const [title, setTitle] = useState("");
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
   const [works, setWorks] = useState<WorkRow[]>([]);
   const [phases, setPhases] = useState<{ id: string; name: string }[]>([]);
   const [disciplines, setDisciplines] = useState<DisciplineRow[]>([]);
-  const [auditPhases, setAuditPhases] = useState<AuditPhaseRow[]>([]);
   const [categories, setCategories] = useState<CategoryRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -38,7 +34,6 @@ export default function NewAuditoriaPage() {
   useEffect(() => {
     worksList().then(setWorks).catch(() => setWorks([]));
     libraryDisciplines().then(setDisciplines).catch(() => setDisciplines([]));
-    libraryAuditPhases().then(setAuditPhases).catch(() => setAuditPhases([]));
     authMe().then((u) => setAuditorId(u.id)).catch(() => {});
   }, []);
 
@@ -65,8 +60,8 @@ export default function NewAuditoriaPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (!workId || !phaseId || !disciplineId || !auditPhaseId || !auditorId) {
-      setError("Preencha obra, fase, disciplina, fase de auditoria.");
+    if (!workId || !phaseId || !disciplineId || !auditorId) {
+      setError("Preencha obra, fase da obra e disciplina.");
       return;
     }
     setLoading(true);
@@ -77,7 +72,6 @@ export default function NewAuditoriaPage() {
           workId,
           phaseId,
           disciplineId,
-          auditPhaseId,
           title: title || `Auditoria ${startDate}`,
           startDate: new Date(startDate).toISOString(),
           auditorId,
@@ -123,15 +117,6 @@ export default function NewAuditoriaPage() {
             <option value="">Selecione</option>
             {disciplines.map((d) => (
               <option key={d.id} value={d.id}>{d.name}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label htmlFor="auditPhase" className="block text-sm font-medium text-[hsl(var(--foreground))]">Fase de auditoria (PL, LO, etc.) *</label>
-          <select id="auditPhase" value={auditPhaseId} onChange={(e) => setAuditPhaseId(e.target.value)} required className="mt-1 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2">
-            <option value="">Selecione</option>
-            {auditPhases.map((a) => (
-              <option key={a.id} value={a.id}>{a.name} - {a.label}</option>
             ))}
           </select>
         </div>

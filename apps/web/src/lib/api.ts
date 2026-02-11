@@ -430,6 +430,11 @@ export async function auditItems(id: string): Promise<AuditItemRow[]> {
 }
 
 export async function auditFinishVerification(id: string): Promise<AuditDetail> {
+  const itens = await auditItems(id);
+  const pendentes = itens.filter((i) => i.status === "NOT_STARTED");
+  if (pendentes.length > 0) {
+    throw new Error("Finalize a avaliação de todos os itens antes de finalizar a verificação.");
+  }
   const { error } = await supabase
     .from("fato_auditorias")
     .update({ status: "aguardando_apontamentos" })
@@ -439,6 +444,16 @@ export async function auditFinishVerification(id: string): Promise<AuditDetail> 
 }
 
 export async function auditComplete(id: string): Promise<AuditDetail> {
+  const itens = await auditItems(id);
+  const ncs = itens.filter((i) => i.status === "NONCONFORMING");
+  const ncsIncompletos = ncs.filter(
+    (i) => !(i.construflowRef && i.construflowRef.trim()) || !(i.evidenceText && i.evidenceText.trim())
+  );
+  if (ncsIncompletos.length > 0) {
+    throw new Error(
+      "Não é possível concluir: todos os itens não conformes devem ter Construflow ID e evidência/observações preenchidos."
+    );
+  }
   const { error } = await supabase
     .from("fato_auditorias")
     .update({ status: "concluida", dataConclusao: new Date().toISOString().slice(0, 10) })
@@ -642,13 +657,36 @@ async function createAudit(body: {
   workId: string;
   phaseId: string;
   disciplineId: string;
-  auditPhaseId: string;
   title?: string;
   startDate: string;
   auditorId: string;
 }) {
   const me = await authMe();
   const codigoAuditoria = `AUD-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+  // 1. Buscar itens do template aplicáveis a esta disciplina e fase
+  const { data: templates, error: templatesError } = await supabase
+    .from("tbl_checklist_template")
+    .select("id, categoriaId, disciplinaId, itemVerificacao, peso, pontosMaximo")
+    .eq("ativo", true)
+    .eq("disciplinaId", body.disciplineId)
+    .order("ordemExibicao", { ascending: true });
+  if (templatesError) throw new Error(templatesError.message);
+
+  // Filtrar por fase: itens que têm aplicabilidade para body.phaseId
+  const { data: aplicaveis } = await supabase
+    .from("tbl_template_aplicabilidade_fases")
+    .select("templateItemId")
+    .eq("faseId", body.phaseId);
+  const faseIds = new Set((aplicaveis ?? []).map((a) => a.templateItemId));
+  const templatesFiltrados =
+    templates?.filter((t) => faseIds.has(t.id)) ?? templates ?? [];
+
+  if (templatesFiltrados.length === 0) {
+    throw new Error("Nenhum item de checklist ativo para esta disciplina e fase. Configure itens no template.");
+  }
+
+  // 2. Criar auditoria
   const { data, error } = await supabase
     .from("fato_auditorias")
     .insert({
@@ -664,5 +702,22 @@ async function createAudit(body: {
     .select("id")
     .single();
   if (error) throw new Error(error.message);
+
+  // 3. Criar itens da auditoria a partir do template
+  const itens = templatesFiltrados.map((t, i) => ({
+    auditoriaId: data.id,
+    templateItemId: t.id,
+    categoriaId: t.categoriaId,
+    disciplinaId: t.disciplinaId,
+    itemVerificacaoSnapshot: t.itemVerificacao,
+    pesoSnapshot: t.peso,
+    pontosMaximoSnapshot: t.pontosMaximo,
+    ordemExibicao: i,
+  }));
+  const { error: itensError } = await supabase
+    .from("fato_auditoria_itens")
+    .insert(itens);
+  if (itensError) throw new Error(itensError.message);
+
   return { id: data.id };
 }
