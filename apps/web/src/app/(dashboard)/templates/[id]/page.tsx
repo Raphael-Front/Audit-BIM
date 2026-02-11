@@ -16,7 +16,7 @@ export default function TemplateDetailPage() {
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
   const [linkingCategory, setLinkingCategory] = useState<{ id: string; name: string } | null>(null);
-  const [targetDisciplineId, setTargetDisciplineId] = useState("");
+  const [targetDisciplineIds, setTargetDisciplineIds] = useState<string[]>([]);
 
   const { data: disciplines = [] } = useQuery({ queryKey: ["disciplines"], queryFn: libraryDisciplines });
   const { data: categories = [] } = useQuery({
@@ -39,8 +39,6 @@ export default function TemplateDetailPage() {
     }) => libraryLinkCategoryToDiscipline(categoryId, disciplineId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categories"] });
-      setLinkingCategory(null);
-      setTargetDisciplineId("");
     },
   });
 
@@ -51,10 +49,32 @@ export default function TemplateDetailPage() {
     categoryIds.includes(item.categoryId)
   );
 
-  const handleLinkSubmit = (e: React.FormEvent) => {
+  const allOtherIds = otherDisciplines.map((d) => d.id);
+  const isAllSelected = otherDisciplines.length > 0 && targetDisciplineIds.length === otherDisciplines.length;
+
+  const handleSelectAll = () => {
+    setTargetDisciplineIds(isAllSelected ? [] : allOtherIds);
+  };
+
+  const handleToggleDiscipline = (disciplineId: string) => {
+    setTargetDisciplineIds((prev) =>
+      prev.includes(disciplineId) ? prev.filter((id) => id !== disciplineId) : [...prev, disciplineId]
+    );
+  };
+
+  const handleLinkSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!linkingCategory || !targetDisciplineId) return;
-    linkMutation.mutate({ categoryId: linkingCategory.id, disciplineId: targetDisciplineId });
+    if (!linkingCategory || targetDisciplineIds.length === 0) return;
+    try {
+      for (const disciplineId of targetDisciplineIds) {
+        await linkMutation.mutateAsync({ categoryId: linkingCategory.id, disciplineId });
+      }
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      setLinkingCategory(null);
+      setTargetDisciplineIds([]);
+    } catch {
+      // erro já exibido por linkMutation.isError
+    }
   };
 
   if (id && !discipline) {
@@ -92,7 +112,10 @@ export default function TemplateDetailPage() {
               {otherDisciplines.length > 0 && (
                 <button
                   type="button"
-                  onClick={() => setLinkingCategory({ id: c.id, name: c.name })}
+                  onClick={() => {
+                  setLinkingCategory({ id: c.id, name: c.name });
+                  setTargetDisciplineIds([]);
+                }}
                   className="rounded-md bg-[hsl(var(--muted))] px-2 py-1 text-xs font-normal text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--accent-foreground))]"
                 >
                   Vincular a outra disciplina
@@ -112,22 +135,34 @@ export default function TemplateDetailPage() {
               Vincular &quot;{linkingCategory.name}&quot; a:
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              <select
-                value={targetDisciplineId}
-                onChange={(e) => setTargetDisciplineId(e.target.value)}
-                required
-                className="rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm"
+              <button
+                type="button"
+                onClick={handleSelectAll}
+                className="rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))]"
               >
-                <option value="">Selecione a disciplina</option>
-                {otherDisciplines.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
+                {isAllSelected ? "Desmarcar todas" : "Selecionar todas"}
+              </button>
+            </div>
+            <div className="mt-2 max-h-48 overflow-y-auto rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] p-2">
+              {otherDisciplines.map((d) => (
+                <label
+                  key={d.id}
+                  className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-[hsl(var(--muted))]"
+                >
+                  <input
+                    type="checkbox"
+                    checked={targetDisciplineIds.includes(d.id)}
+                    onChange={() => handleToggleDiscipline(d.id)}
+                    className="h-4 w-4 rounded border-[hsl(var(--border))]"
+                  />
+                  <span className="text-sm">{d.name}</span>
+                </label>
+              ))}
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
               <button
                 type="submit"
-                disabled={linkMutation.isPending || !targetDisciplineId}
+                disabled={linkMutation.isPending || targetDisciplineIds.length === 0}
                 className="rounded-md bg-[hsl(var(--accent))] px-3 py-2 text-sm text-[hsl(var(--accent-foreground))] hover:opacity-90 disabled:opacity-50"
               >
                 {linkMutation.isPending ? "Salvando…" : "Vincular"}
@@ -136,7 +171,7 @@ export default function TemplateDetailPage() {
                 type="button"
                 onClick={() => {
                   setLinkingCategory(null);
-                  setTargetDisciplineId("");
+                  setTargetDisciplineIds([]);
                 }}
                 className="rounded-md px-3 py-2 text-sm text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--background))]"
               >

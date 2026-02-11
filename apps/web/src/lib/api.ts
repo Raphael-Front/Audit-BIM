@@ -587,7 +587,7 @@ export async function libraryLinkCategoryToDiscipline(
   const ordemExibicao = order ?? (max?.ordemExibicao ?? -1) + 1;
   const { data, error } = await supabase
     .from("dim_categorias_disciplinas")
-    .insert({ categoriaId: categoryId, disciplinaId, ordemExibicao })
+    .insert({ categoriaId: categoryId, disciplinaId: disciplineId, ordemExibicao })
     .select("categoriaId, disciplinaId, ordemExibicao")
     .single();
   if (error) throw new Error(error.message);

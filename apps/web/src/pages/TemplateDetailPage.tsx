@@ -16,7 +16,7 @@ export function TemplateDetailPage() {
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
   const [linkingCategory, setLinkingCategory] = useState<{ id: string; name: string } | null>(null);
-  const [targetDisciplineId, setTargetDisciplineId] = useState("");
+  const [targetDisciplineIds, setTargetDisciplineIds] = useState<string[]>([]);
 
   const { data: disciplines = [] } = useQuery({ queryKey: ["disciplines"], queryFn: libraryDisciplines });
   const { data: categories = [] } = useQuery({
@@ -39,8 +39,6 @@ export function TemplateDetailPage() {
     }) => libraryLinkCategoryToDiscipline(categoryId, disciplineId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categories"] });
-      setLinkingCategory(null);
-      setTargetDisciplineId("");
     },
   });
 
@@ -51,10 +49,32 @@ export function TemplateDetailPage() {
     categoryIds.includes(item.categoryId)
   );
 
-  const handleLinkSubmit = (e: React.FormEvent) => {
+  const allOtherIds = otherDisciplines.map((d) => d.id);
+  const isAllSelected = otherDisciplines.length > 0 && targetDisciplineIds.length === otherDisciplines.length;
+
+  const handleSelectAll = () => {
+    setTargetDisciplineIds(isAllSelected ? [] : allOtherIds);
+  };
+
+  const handleToggleDiscipline = (disciplineId: string) => {
+    setTargetDisciplineIds((prev) =>
+      prev.includes(disciplineId) ? prev.filter((id) => id !== disciplineId) : [...prev, disciplineId]
+    );
+  };
+
+  const handleLinkSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!linkingCategory || !targetDisciplineId) return;
-    linkMutation.mutate({ categoryId: linkingCategory.id, disciplineId: targetDisciplineId });
+    if (!linkingCategory || targetDisciplineIds.length === 0) return;
+    try {
+      for (const disciplineId of targetDisciplineIds) {
+        await linkMutation.mutateAsync({ categoryId: linkingCategory.id, disciplineId });
+      }
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      setLinkingCategory(null);
+      setTargetDisciplineIds([]);
+    } catch {
+      // erro já exibido por linkMutation.isError
+    }
   };
 
   if (id && !discipline) {
@@ -92,7 +112,10 @@ export function TemplateDetailPage() {
               {otherDisciplines.length > 0 && (
                 <button
                   type="button"
-                  onClick={() => setLinkingCategory({ id: c.id, name: c.name })}
+                  onClick={() => {
+                  setLinkingCategory({ id: c.id, name: c.name });
+                  setTargetDisciplineIds([]);
+                }}
                   className="rounded-md bg-gray-100 px-2 py-1 text-xs font-normal text-gray-600 hover:bg-gray-200"
                 >
                   Vincular a outra disciplina
@@ -112,22 +135,34 @@ export function TemplateDetailPage() {
               Vincular &quot;{linkingCategory.name}&quot; a:
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              <select
-                value={targetDisciplineId}
-                onChange={(e) => setTargetDisciplineId(e.target.value)}
-                required
-                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+              <button
+                type="button"
+                onClick={handleSelectAll}
+                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
               >
-                <option value="">Selecione a disciplina</option>
-                {otherDisciplines.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
+                {isAllSelected ? "Desmarcar todas" : "Selecionar todas"}
+              </button>
+            </div>
+            <div className="mt-2 max-h-48 overflow-y-auto rounded-md border border-gray-200 bg-white p-2">
+              {otherDisciplines.map((d) => (
+                <label
+                  key={d.id}
+                  className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-gray-50"
+                >
+                  <input
+                    type="checkbox"
+                    checked={targetDisciplineIds.includes(d.id)}
+                    onChange={() => handleToggleDiscipline(d.id)}
+                    className="h-4 w-4 rounded border-gray-300"
+                  />
+                  <span className="text-sm">{d.name}</span>
+                </label>
+              ))}
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
               <button
                 type="submit"
-                disabled={linkMutation.isPending || !targetDisciplineId}
+                disabled={linkMutation.isPending || targetDisciplineIds.length === 0}
                 className="rounded-md bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
               >
                 {linkMutation.isPending ? "Salvando…" : "Vincular"}
@@ -136,7 +171,7 @@ export function TemplateDetailPage() {
                 type="button"
                 onClick={() => {
                   setLinkingCategory(null);
-                  setTargetDisciplineId("");
+                  setTargetDisciplineIds([]);
                 }}
                 className="rounded-md px-3 py-2 text-sm text-gray-600 hover:bg-gray-200"
               >
