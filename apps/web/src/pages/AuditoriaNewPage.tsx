@@ -102,13 +102,13 @@ export function AuditoriaNewPage() {
   return (
     <Container>
       <div className="mb-6">
-        <Link to="/auditorias" className="text-sm text-gray-500 hover:text-gray-900">← Auditorias</Link>
+        <Link to="/auditorias" className="text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--macro))]">← Auditorias</Link>
       </div>
-      <h1 className="text-3xl font-semibold tracking-tight text-gray-900">Nova auditoria</h1>
+      <h1 className="text-3xl font-semibold tracking-tight text-[hsl(var(--macro))]">Nova auditoria</h1>
       <form onSubmit={handleSubmit} className="mt-8 max-w-md space-y-4">
         <div>
-          <label htmlFor="work" className="block text-sm font-medium text-gray-700">Obra *</label>
-          <select id="work" value={workId} onChange={(e) => setWorkId(e.target.value)} required className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-3 py-2">
+          <label htmlFor="work" className="block text-sm font-medium text-[hsl(var(--foreground))]">Obra *</label>
+          <select id="work" value={workId} onChange={(e) => setWorkId(e.target.value)} required className="mt-1 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2">
             <option value="">Selecione</option>
             {works.map((w) => (
               <option key={w.id} value={w.id}>{w.name}</option>
@@ -116,8 +116,8 @@ export function AuditoriaNewPage() {
           </select>
         </div>
         <div>
-          <label htmlFor="phase" className="block text-sm font-medium text-gray-700">Fase da obra *</label>
-          <select id="phase" value={phaseId} onChange={(e) => setPhaseId(e.target.value)} required className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-3 py-2">
+          <label htmlFor="phase" className="block text-sm font-medium text-[hsl(var(--foreground))]">Fase da obra *</label>
+          <select id="phase" value={phaseId} onChange={(e) => setPhaseId(e.target.value)} required className="mt-1 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2">
             <option value="">Selecione</option>
             {phases.map((p) => (
               <option key={p.id} value={p.id}>{p.name}</option>
@@ -125,8 +125,8 @@ export function AuditoriaNewPage() {
           </select>
         </div>
         <div>
-          <label htmlFor="discipline" className="block text-sm font-medium text-gray-700">Disciplina *</label>
-          <select id="discipline" value={disciplineId} onChange={(e) => setDisciplineId(e.target.value)} required className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-3 py-2">
+          <label htmlFor="discipline" className="block text-sm font-medium text-[hsl(var(--foreground))]">Disciplina *</label>
+          <select id="discipline" value={disciplineId} onChange={(e) => setDisciplineId(e.target.value)} required className="mt-1 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2">
             <option value="">Selecione</option>
             {disciplines.map((d) => (
               <option key={d.id} value={d.id}>{d.name}</option>
@@ -134,15 +134,15 @@ export function AuditoriaNewPage() {
           </select>
         </div>
         <div>
-          <label htmlFor="title" className="block text-sm font-medium text-gray-700">Título</label>
-          <input id="title" value={title} readOnly className="mt-1 w-full rounded-xl border border-gray-300 bg-gray-100 px-3 py-2 cursor-not-allowed" placeholder="Preenchido automaticamente ao selecionar obra, fase e disciplina" />
+          <label htmlFor="title" className="block text-sm font-medium text-[hsl(var(--foreground))]">Título</label>
+          <input id="title" value={title} readOnly className="mt-1 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--muted))] px-3 py-2 cursor-not-allowed" placeholder="Preenchido automaticamente ao selecionar obra, fase e disciplina" />
         </div>
         <div>
-          <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">Data início *</label>
-          <input id="startDate" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-3 py-2" />
+          <label htmlFor="startDate" className="block text-sm font-medium text-[hsl(var(--foreground))]">Data início *</label>
+          <input id="startDate" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required className="mt-1 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2" />
         </div>
         {error && <p className="text-sm text-red-600">{error}</p>}
-        <button type="submit" disabled={loading} className="rounded-xl bg-blue-600 px-4 py-2 font-medium text-white hover:opacity-90 disabled:opacity-50">Criar auditoria</button>
+        <button type="submit" disabled={loading} className="rounded-xl bg-[hsl(var(--accent))] px-4 py-2 font-medium text-[hsl(var(--accent-foreground))] hover:opacity-90 disabled:opacity-50">Criar auditoria</button>
       </form>
     </Container>
   );

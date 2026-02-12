@@ -1,4 +1,4 @@
-# Supabase (BIM Audit Cloud) — Modo Total
+# Supabase (BIM Audit) — Modo Total
 
 Este projeto usa **Supabase como backend completo** (Opção B):
 

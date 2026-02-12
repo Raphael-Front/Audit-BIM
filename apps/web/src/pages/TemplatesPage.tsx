@@ -10,12 +10,12 @@ export function TemplatesPage() {
     <Container>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-gray-900">Biblioteca</h1>
-          <p className="text-sm text-gray-500">Disciplinas, categorias e itens de checklist</p>
+          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-[hsl(var(--macro))]">Biblioteca</h1>
+          <p className="text-sm text-[hsl(var(--muted-foreground))]">Disciplinas, categorias e itens de checklist</p>
         </div>
         <Link
           to="/templates/new"
-          className="rounded-xl bg-blue-600 px-4 py-2 font-medium text-white hover:opacity-90"
+          className="rounded-xl bg-[hsl(var(--accent))] px-4 py-2 font-medium text-[hsl(var(--accent-foreground))] hover:opacity-90"
         >
           Nova disciplina
         </Link>
@@ -25,14 +25,14 @@ export function TemplatesPage() {
           <Link
             key={d.id}
             to={`/templates/${d.id}`}
-            className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:border-blue-300"
+            className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 shadow-sm hover:border-[hsl(var(--accent))]"
           >
-            <p className="font-medium text-gray-900">{d.name}</p>
-            <p className="mt-2 text-xs text-gray-500">Ordem: {d.order}</p>
+            <p className="font-medium text-[hsl(var(--foreground))]">{d.name}</p>
+            <p className="mt-2 text-xs text-[hsl(var(--muted-foreground))]">Ordem: {d.order}</p>
           </Link>
         ))}
         {disciplines.length === 0 && (
-          <p className="col-span-full text-sm text-gray-500">Nenhuma disciplina cadastrada.</p>
+          <p className="col-span-full text-sm text-[hsl(var(--muted-foreground))]">Nenhuma disciplina cadastrada.</p>
         )}
       </div>
     </Container>

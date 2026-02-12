@@ -10,7 +10,7 @@ export default function TemplatesPage() {
     <Container>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-[hsl(var(--foreground))]">Biblioteca</h1>
+          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-[hsl(var(--macro))]">Biblioteca</h1>
           <p className="text-sm text-[hsl(var(--muted-foreground))]">Disciplinas, categorias e itens de checklist</p>
         </div>
         <Link

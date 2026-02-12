@@ -47,7 +47,7 @@ export function AuditoriaDetailPage() {
     return (
       <Container>
         <p className="text-red-600">Auditoria não encontrada.</p>
-        <Link to="/auditorias" className="mt-2 inline-block text-sm text-blue-600">← Voltar às auditorias</Link>
+        <Link to="/auditorias" className="mt-2 inline-block text-sm text-[hsl(var(--accent))]">← Voltar às auditorias</Link>
       </Container>
     );
   }
@@ -67,16 +67,16 @@ export function AuditoriaDetailPage() {
   return (
     <Container>
       <div className="mb-6">
-        <Link to="/auditorias" className="text-sm text-gray-500 hover:text-gray-900">← Auditorias</Link>
+        <Link to="/auditorias" className="text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--macro))]">← Auditorias</Link>
       </div>
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold text-gray-900">{(audit as AuditDetail).title ?? "Auditoria"}</h1>
-        <p className="text-sm text-gray-500">
+      <div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 shadow-sm">
+        <h1 className="text-2xl font-semibold text-[hsl(var(--macro))]">{(audit as AuditDetail).title ?? "Auditoria"}</h1>
+        <p className="text-sm text-[hsl(var(--accent))]/90">
           {(audit as AuditDetail).work?.name ?? ""} • {(audit as AuditDetail).phase?.name ?? ""} • {(audit as AuditDetail).discipline?.name ?? ""} • {(audit as AuditDetail).auditPhase?.name ?? ""}
         </p>
         <div className="mt-4 flex flex-wrap items-center gap-4">
           <span className="rounded-full border px-3 py-1 text-xs font-medium">{statusLabel[status] ?? status}</span>
-          <span className="text-sm text-gray-500">{ncCount} NC(s) • {pendentes} pendente(s)</span>
+          <span className="text-sm text-[hsl(var(--accent))]/90">{ncCount} NC(s) • {pendentes} pendente(s)</span>
           <button
             onClick={() => {
               if (podeFinalizar) finishVerification.mutate();
@@ -95,7 +95,7 @@ export function AuditoriaDetailPage() {
             className={`ml-auto rounded-xl px-4 py-2 text-sm font-medium ${
               podeFinalizar || podeConcluir
                 ? "bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
-                : "cursor-not-allowed bg-gray-200 text-gray-500"
+                : "cursor-not-allowed bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]"
             }`}
           >
             {finishVerification.isPending || completeAudit.isPending
@@ -113,13 +113,13 @@ export function AuditoriaDetailPage() {
         )}
 
         <div className="mt-6 flex gap-3">
-          <Link to={`/auditorias/${id}/execucao`} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:opacity-90">Execução</Link>
-          <Link to={`/auditorias/${id}/ncs`} className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium hover:bg-gray-50">NCs</Link>
+          <Link to={`/auditorias/${id}/execucao`} className="rounded-xl bg-[hsl(var(--accent))] px-4 py-2 text-sm font-medium text-white hover:opacity-90">Execução</Link>
+          <Link to={`/auditorias/${id}/ncs`} className="rounded-xl border border-[hsl(var(--border))] px-4 py-2 text-sm font-medium hover:bg-[hsl(var(--muted))]">NCs</Link>
           {podeCancelar && (
             <button
               onClick={() => window.confirm("Cancelar esta auditoria?") && cancelAudit.mutate()}
               disabled={cancelAudit.isPending}
-              className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
+              className="rounded-xl border border-[hsl(var(--border))] px-4 py-2 text-sm font-medium hover:bg-[hsl(var(--muted))] disabled:opacity-50"
             >
               {cancelAudit.isPending ? "Processando..." : "Cancelar auditoria"}
             </button>
@@ -127,19 +127,19 @@ export function AuditoriaDetailPage() {
         </div>
       </div>
       <div className="mt-8">
-        <h2 className="text-lg font-medium text-gray-900">Itens</h2>
+        <h2 className="text-lg font-medium text-[hsl(var(--macro))]">Itens</h2>
         <ul className="mt-4 space-y-2">
           {(itens as AuditItemRow[]).slice(0, 20).map((i) => (
-            <li key={i.id} className="flex items-center justify-between rounded-xl border border-gray-200 px-4 py-3">
-              <p className="font-medium text-gray-900">
+            <li key={i.id} className="flex items-center justify-between rounded-xl border border-[hsl(var(--border))] px-4 py-3">
+              <p className="font-medium text-[hsl(var(--foreground))]">
                 {i.checklistItem?.description ?? i.customItem?.description ?? i.id}
               </p>
-              <span className={`rounded-full px-3 py-1 text-xs font-medium ${i.status === "CONFORMING" ? "bg-emerald-600 text-white" : i.status === "NONCONFORMING" ? "bg-red-600 text-white" : "bg-gray-100 text-gray-600"}`}>
+              <span className={`rounded-full px-3 py-1 text-xs font-medium ${i.status === "CONFORMING" ? "bg-emerald-600 text-white" : i.status === "NONCONFORMING" ? "bg-red-600 text-white" : "bg-[hsl(var(--muted))] text-[hsl(var(--macro))]"}`}>
                 {statusLabel[i.status] ?? i.status}
               </span>
             </li>
           ))}
-          {itens.length > 20 && <li className="text-sm text-gray-500">+ {itens.length - 20} itens</li>}
+          {itens.length > 20 && <li className="text-sm text-[hsl(var(--accent))]/90">+ {itens.length - 20} itens</li>}
         </ul>
       </div>
     </Container>

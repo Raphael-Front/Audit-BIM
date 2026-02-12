@@ -1,7 +1,7 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Container } from "@/components/layout/Container";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { auditGet, auditItems, auditUpdateItem, auditFinishVerification, auditComplete, type AuditDetail, type AuditItemRow } from "@/lib/api";
 
 const STATUS_OPTIONS: { value: string; label: string }[] = [
@@ -12,11 +12,20 @@ const STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: "NA", label: "N/A" },
 ];
 
+const CATEGORIA_OUTROS = "Outros";
+
+function getCategoryName(item: AuditItemRow): string {
+  const name = item.checklistItem?.category?.name ?? item.customItem?.category?.name;
+  return name?.trim() || CATEGORIA_OUTROS;
+}
+
 export function ExecucaoPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [evidenceText, setEvidenceText] = useState<Record<string, string>>({});
   const [construflowRef, setConstruflowRef] = useState<Record<string, string>>({});
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   const { data: audit } = useQuery({
     queryKey: ["audit", id],
@@ -41,6 +50,30 @@ export function ExecucaoPage() {
     setConstruflowRef(cf);
   }, [itens]);
 
+  const { categories, itemsByCategory } = useMemo(() => {
+    if (!itens?.length) return { categories: [] as string[], itemsByCategory: {} as Record<string, AuditItemRow[]> };
+    const byCategory: Record<string, AuditItemRow[]> = {};
+    const order: string[] = [];
+    for (const item of itens) {
+      const cat = getCategoryName(item);
+      if (!byCategory[cat]) {
+        byCategory[cat] = [];
+        order.push(cat);
+      }
+      byCategory[cat].push(item);
+    }
+    return { categories: order, itemsByCategory: byCategory };
+  }, [itens]);
+
+  function toggleCategory(categoryName: string) {
+    setExpandedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(categoryName)) next.delete(categoryName);
+      else next.add(categoryName);
+      return next;
+    });
+  }
+
   const updateItem = useMutation({
     mutationFn: async ({ itemId, status, evidenceText: ev, construflowRef: cf }: { itemId: string; status?: string; evidenceText?: string; construflowRef?: string }) => {
       await auditUpdateItem(id!, itemId, { status, evidenceText: ev, construflowRef: cf });
@@ -59,6 +92,7 @@ export function ExecucaoPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["audit", id] });
       queryClient.invalidateQueries({ queryKey: ["audit-items", id] });
+      navigate(`/auditorias/${id}`, { replace: true });
     },
   });
 
@@ -90,6 +124,12 @@ export function ExecucaoPage() {
         i.status === "NONCONFORMING" &&
         (!(i.construflowRef && i.construflowRef.trim()) || !(i.evidenceText && i.evidenceText.trim()))
     ) ?? [];
+  const ncsIncompletosNoForm = itens?.filter((i) => {
+    if (i.status !== "NONCONFORMING") return false;
+    const cf = (construflowRef[i.id] ?? i.construflowRef ?? "").trim();
+    const ev = (evidenceText[i.id] ?? i.evidenceText ?? "").trim();
+    return !cf || !ev;
+  }).length ?? 0;
   const podeFinalizar =
     status &&
     (status === "nao_iniciado" || status === "em_andamento") &&
@@ -100,7 +140,7 @@ export function ExecucaoPage() {
   if (isLoading || !itens) {
     return (
       <Container>
-        <p className="text-sm text-gray-500">Carregando…</p>
+        <p className="text-sm text-[hsl(var(--muted-foreground))]">Carregando…</p>
       </Container>
     );
   }
@@ -108,12 +148,13 @@ export function ExecucaoPage() {
   return (
     <Container>
       <div className="mb-6 flex items-center justify-between">
-        <Link to={`/auditorias/${id}`} className="text-sm text-gray-500 hover:text-gray-900">← Auditoria</Link>
+        <Link to={`/auditorias/${id}`} className="text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--macro))]">← Auditoria</Link>
       </div>
-      <h1 className="text-2xl font-semibold text-gray-900">Execução</h1>
-      <p className="text-sm text-gray-500">Avalie cada item e salve. Alterações são persistidas automaticamente.</p>
+      <h1 className="text-2xl font-semibold text-[hsl(var(--macro))]">Execução</h1>
+      <p className="text-sm text-[hsl(var(--muted-foreground))]">Avalie cada item e salve. Alterações são persistidas automaticamente.</p>
+      <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">Clique em uma categoria para exibir os itens de checklist.</p>
 
-      {status === "aguardando_apontamentos" && (
+      {status === "aguardando_apontamentos" && ncsIncompletosNoForm > 0 && (
         <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
           Preencha o Construflow ID e evidência/observações em cada item não conforme e depois clique em Concluir auditoria.
         </p>
@@ -125,7 +166,7 @@ export function ExecucaoPage() {
             <button
               onClick={() => finishVerification.mutate()}
               disabled={finishVerification.isPending}
-              className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              className="rounded-xl bg-[hsl(var(--accent))] px-4 py-2 text-sm font-medium text-[hsl(var(--accent-foreground))] hover:opacity-90 disabled:opacity-50"
             >
               {finishVerification.isPending ? "Processando..." : "Finalizar verificação"}
             </button>
@@ -142,52 +183,86 @@ export function ExecucaoPage() {
         </div>
       )}
 
-      <div className="mt-8 space-y-6">
-        {itens.map((i) => (
-          <div key={i.id} className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0 flex-1">
-                <p className="font-medium text-gray-900">{description(i)}</p>
-              </div>
-              <span className={`rounded-full px-3 py-1 text-xs font-medium ${i.status === "CONFORMING" ? "bg-emerald-600 text-white" : i.status === "NONCONFORMING" ? "bg-red-600 text-white" : i.status === "NA" ? "bg-zinc-400 text-black" : "bg-gray-100 text-gray-600"}`}>{i.status}</span>
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {STATUS_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => handleStatusChange(i.id, opt.value)}
-                  className={`rounded-lg border px-3 py-1.5 text-sm font-medium ${i.status === opt.value ? "border-blue-500 bg-gray-100" : "border-gray-200 hover:bg-gray-50"}`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-            <div className="mt-4 space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Evidência / Observações</label>
-              <textarea
-                value={evidenceText[i.id] ?? ""}
-                onChange={(e) => setEvidenceText((prev) => ({ ...prev, [i.id]: e.target.value }))}
-                onBlur={() => handleBlur(i.id)}
-                rows={2}
-                className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm"
-              />
-              {i.status === "NONCONFORMING" && (
-                <>
-                  <label className="block text-sm font-medium text-gray-700">Construflow ID</label>
-                  <input
-                    type="text"
-                    value={construflowRef[i.id] ?? ""}
-                    onChange={(e) => setConstruflowRef((prev) => ({ ...prev, [i.id]: e.target.value }))}
-                    onBlur={() => handleBlur(i.id)}
-                    placeholder="ID do apontamento"
-                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm"
-                  />
-                </>
+      <div className="mt-6 space-y-3">
+        {categories.map((categoryName) => {
+          const items = itemsByCategory[categoryName] ?? [];
+          const isExpanded = expandedCategories.has(categoryName);
+          const pendentesCat = items.filter((i) => i.status === "NOT_STARTED").length;
+          const conformesCat = items.filter((i) => i.status === "CONFORMING").length;
+          const totalCat = items.length;
+          return (
+            <div key={categoryName} className={`rounded-2xl border shadow-sm overflow-hidden transition-colors ${isExpanded ? "border-2 border-[hsl(var(--accent))]" : "border border-[hsl(var(--border))]"} bg-[hsl(var(--card))]`}>
+              <button
+                type="button"
+                onClick={() => toggleCategory(categoryName)}
+                className="w-full flex items-center justify-between gap-4 px-6 py-4 text-left hover:bg-black/[0.06] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--card))] appearance-none bg-transparent border-0"
+              >
+                <span className="font-semibold text-[hsl(var(--macro))]">{categoryName}</span>
+                <span className="flex items-center gap-3 text-sm text-[hsl(var(--muted-foreground))]">
+                  <span>{totalCat} itens</span>
+                  {pendentesCat > 0 && <span className="text-amber-600">{pendentesCat} pendentes</span>}
+                  {totalCat > 0 && <span className="text-emerald-600">{conformesCat} conformes</span>}
+                  <span className="shrink-0 inline-flex items-center justify-center" aria-hidden>
+                  {isExpanded ? (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg>
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
+                  )}
+                </span>
+                </span>
+              </button>
+              {isExpanded && (
+                <div className="border-t border-[hsl(var(--border))] bg-[hsl(var(--muted))] p-4 space-y-6">
+                  {items.map((i) => (
+                    <div key={i.id} className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5 shadow-sm">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-[hsl(var(--foreground))]">{description(i)}</p>
+                        </div>
+                        <span className={`rounded-full px-3 py-1 text-xs font-medium shrink-0 ${i.status === "CONFORMING" ? "bg-emerald-600 text-white" : i.status === "NONCONFORMING" ? "bg-red-600 text-white" : i.status === "NA" ? "bg-zinc-400 text-black" : "bg-[hsl(var(--muted))] text-[hsl(var(--macro))]"}`}>{i.status}</span>
+                      </div>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {STATUS_OPTIONS.map((opt) => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => handleStatusChange(i.id, opt.value)}
+                            className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${i.status === opt.value ? "border-[hsl(var(--accent))] bg-[hsl(var(--muted))]" : "border-[hsl(var(--border))] hover:bg-black/[0.06]"}`}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="mt-4 space-y-2">
+                        <label className="block text-sm font-medium text-[hsl(var(--foreground))]">Evidência / Observações</label>
+                        <textarea
+                          value={evidenceText[i.id] ?? ""}
+                          onChange={(e) => setEvidenceText((prev) => ({ ...prev, [i.id]: e.target.value }))}
+                          onBlur={() => handleBlur(i.id)}
+                          rows={2}
+                          className="w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2 text-sm text-[hsl(var(--foreground))]"
+                        />
+                        {i.status === "NONCONFORMING" && (
+                          <>
+                            <label className="block text-sm font-medium text-[hsl(var(--foreground))]">Construflow ID</label>
+                            <input
+                              type="text"
+                              value={construflowRef[i.id] ?? ""}
+                              onChange={(e) => setConstruflowRef((prev) => ({ ...prev, [i.id]: e.target.value }))}
+                              onBlur={() => handleBlur(i.id)}
+                              placeholder="ID do apontamento"
+                              className="w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2 text-sm text-[hsl(var(--foreground))]"
+                            />
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </Container>
   );

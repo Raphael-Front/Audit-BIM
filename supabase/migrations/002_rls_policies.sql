@@ -1,4 +1,4 @@
--- Row Level Security (RLS) para BIM Audit Cloud
+-- Row Level Security (RLS) para BIM Audit
 -- Roles: admin (acesso total), auditor (criar/editar suas auditorias), visualizador (leitura)
 
 -- Habilitar RLS em todas as tabelas

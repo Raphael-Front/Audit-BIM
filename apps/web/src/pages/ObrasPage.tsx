@@ -13,12 +13,12 @@ export function ObrasPage() {
     <Container>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-gray-900">Obras</h1>
-          <p className="text-sm text-gray-500">Gestão de obras</p>
+          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-[hsl(var(--macro))]">Obras</h1>
+          <p className="text-sm text-[hsl(var(--muted-foreground))]">Gestão de obras</p>
         </div>
         <Link
           to="/obras/new"
-          className="rounded-xl bg-blue-600 px-4 py-2 font-medium text-white hover:opacity-90"
+          className="rounded-xl bg-[hsl(var(--accent))] px-4 py-2 font-medium text-[hsl(var(--accent-foreground))] hover:opacity-90"
         >
           Nova obra
         </Link>
@@ -28,15 +28,15 @@ export function ObrasPage() {
           <Link
             key={o.id}
             to={`/obras/${o.id}`}
-            className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:border-blue-300"
+            className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 shadow-sm hover:border-[hsl(var(--accent))]"
           >
-            <p className="font-medium text-gray-900">{o.name}</p>
-            {o.code && <p className="text-sm text-gray-500">{o.code}</p>}
-            <span className="mt-2 inline-block rounded-full border px-3 py-1 text-xs font-medium text-gray-500">{o.active ? "Ativa" : "Inativa"}</span>
+            <p className="font-medium text-[hsl(var(--foreground))]">{o.name}</p>
+            {o.code && <p className="text-sm text-[hsl(var(--muted-foreground))]">{o.code}</p>}
+            <span className="mt-2 inline-block rounded-full border border-[hsl(var(--border))] px-3 py-1 text-xs font-medium text-[hsl(var(--muted-foreground))]">{o.active ? "Ativa" : "Inativa"}</span>
           </Link>
         ))}
         {obras.length === 0 && (
-          <p className="col-span-full text-sm text-gray-500">Nenhuma obra cadastrada.</p>
+          <p className="col-span-full text-sm text-[hsl(var(--muted-foreground))]">Nenhuma obra cadastrada.</p>
         )}
       </div>
     </Container>

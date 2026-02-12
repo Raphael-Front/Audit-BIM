@@ -14,12 +14,12 @@ export function AuditoriasPage() {
     <Container>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-gray-900">Auditorias</h1>
-          <p className="text-sm text-gray-500">Planejamento e execução</p>
+          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-[hsl(var(--macro))]">Auditorias</h1>
+          <p className="text-sm text-[hsl(var(--muted-foreground))]">Planejamento e execução</p>
         </div>
         <Link
           to="/auditorias/new"
-          className="rounded-xl bg-blue-600 px-4 py-2 font-medium text-white hover:opacity-90"
+          className="rounded-xl bg-[hsl(var(--accent))] px-4 py-2 font-medium text-[hsl(var(--accent-foreground))] hover:opacity-90"
         >
           Nova auditoria
         </Link>
@@ -29,17 +29,17 @@ export function AuditoriasPage() {
           <Link
             key={a.id}
             to={`/auditorias/${a.id}`}
-            className="flex items-center justify-between rounded-2xl border border-gray-200 bg-white px-6 py-4 shadow-sm hover:border-blue-300"
+            className="flex items-center justify-between rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-6 py-4 shadow-sm hover:border-[hsl(var(--accent))]"
           >
             <div>
-              <p className="font-medium text-gray-900">{a.title ?? a.id}</p>
-              <p className="text-sm text-gray-500">{a.startDate ?? "Sem data"}</p>
+              <p className="font-medium text-[hsl(var(--foreground))]">{a.title ?? a.id}</p>
+              <p className="text-sm text-[hsl(var(--muted-foreground))]">{a.startDate ?? "Sem data"}</p>
             </div>
-            <span className="rounded-full border px-3 py-1 text-xs font-medium text-gray-500">{a.status}</span>
+            <span className="rounded-full border border-[hsl(var(--border))] px-3 py-1 text-xs font-medium text-[hsl(var(--muted-foreground))]">{a.status}</span>
           </Link>
         ))}
         {recent.length === 0 && (
-          <p className="text-sm text-gray-500">Nenhuma auditoria.</p>
+          <p className="text-sm text-[hsl(var(--muted-foreground))]">Nenhuma auditoria.</p>
         )}
       </div>
     </Container>

@@ -21,7 +21,7 @@ export function NCsPage() {
     return (
       <Container>
         <p className="text-red-600">Auditoria não encontrada.</p>
-        <Link to="/auditorias" className="mt-2 inline-block text-sm text-blue-600">← Voltar</Link>
+        <Link to="/auditorias" className="mt-2 inline-block text-sm text-[hsl(var(--accent))]">← Voltar</Link>
       </Container>
     );
   }
@@ -38,10 +38,10 @@ export function NCsPage() {
   return (
     <Container>
       <div className="mb-6">
-        <Link to={`/auditorias/${id}`} className="text-sm text-gray-500 hover:text-gray-900">← Auditoria</Link>
+        <Link to={`/auditorias/${id}`} className="text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--macro))]">← Auditoria</Link>
       </div>
-      <h1 className="text-2xl font-semibold text-gray-900">Não conformidades</h1>
-      <p className="text-sm text-gray-500">Vincule o ID do Construflow a cada NC antes de concluir a auditoria.</p>
+      <h1 className="text-2xl font-semibold text-[hsl(var(--macro))]">Não conformidades</h1>
+      <p className="text-sm text-[hsl(var(--muted-foreground))]">Vincule o ID do Construflow a cada NC antes de concluir a auditoria.</p>
       <NCList auditoriaId={id!} initialItems={ncs} />
     </Container>
   );

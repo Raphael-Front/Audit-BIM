@@ -1,4 +1,4 @@
--- BIM Audit Cloud — Schema inicial (PRD)
+-- BIM Audit — Schema inicial (PRD)
 -- Tabelas: obras, templates, template_itens, auditorias, auditoria_itens, auditoria_logs
 
 -- ENUMs

@@ -73,15 +73,15 @@ export function AuditDetailPage() {
 
   return (
     <div>
-      <Link to="/audits" className="mb-4 inline-block text-sm text-blue-600 hover:underline">← Voltar à lista</Link>
-      <div className="mb-6 rounded-lg border border-gray-200 bg-white p-4">
+      <Link to="/audits" className="mb-4 inline-block text-sm text-purple-600 hover:underline">← Voltar à lista</Link>
+      <div className="mb-6 rounded-lg border border-purple-200 bg-white p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h1 className="text-xl font-semibold text-gray-900">{(audit as AuditDetail).title}</h1>
-          <span className={`rounded-full px-2 py-0.5 text-sm ${(audit as AuditDetail).status === "COMPLETED" ? "bg-emerald-100 text-emerald-800" : (audit as AuditDetail).status === "WAITING_FOR_ISSUES" ? "bg-amber-100 text-amber-800" : (audit as AuditDetail).status === "CANCELED" ? "bg-gray-100 text-gray-600" : "bg-blue-100 text-blue-800"}`}>
+          <h1 className="text-xl font-semibold text-purple-900">{(audit as AuditDetail).title}</h1>
+          <span className={`rounded-full px-2 py-0.5 text-sm ${(audit as AuditDetail).status === "COMPLETED" ? "bg-emerald-100 text-emerald-800" : (audit as AuditDetail).status === "WAITING_FOR_ISSUES" ? "bg-amber-100 text-amber-800" : (audit as AuditDetail).status === "CANCELED" ? "bg-purple-100 text-purple-600" : "bg-purple-100 text-purple-800"}`}>
             {statusLabels[(audit as AuditDetail).status] ?? (audit as AuditDetail).status}
           </span>
         </div>
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-sm text-purple-600/90">
           {[(audit as AuditDetail).work?.name, (audit as AuditDetail).phase?.name, (audit as AuditDetail).discipline?.name, (audit as AuditDetail).auditPhase?.label].filter(Boolean).join(" · ")}
           {(audit as AuditDetail).auditor?.name && ` · ${(audit as AuditDetail).auditor.name}`}
         </p>
@@ -97,7 +97,7 @@ export function AuditDetailPage() {
             <button
               onClick={() => finishVerification.mutate()}
               disabled={finishVerification.isPending}
-              className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              className="rounded bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:opacity-50"
             >
               {finishVerification.isPending ? "Processando..." : "Finalizar verificação"}
             </button>
@@ -115,7 +115,7 @@ export function AuditDetailPage() {
             <button
               onClick={() => window.confirm("Cancelar esta auditoria?") && cancel.mutate()}
               disabled={cancel.isPending}
-              className="rounded border border-gray-300 bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
+              className="rounded border border-purple-200 bg-white px-4 py-2 text-sm font-medium hover:bg-purple-50 disabled:opacity-50"
             >
               {cancel.isPending ? "Processando..." : "Cancelar auditoria"}
             </button>
@@ -123,21 +123,21 @@ export function AuditDetailPage() {
         </div>
       </div>
 
-      <h2 className="mb-2 text-lg font-medium text-gray-900">Itens</h2>
+      <h2 className="mb-2 text-lg font-medium text-purple-900">Itens</h2>
       <ul className="space-y-2">
         {(items as AuditItemRow[]).map((item) => (
-          <li key={item.id} className="rounded border border-gray-200 bg-white p-3">
+          <li key={item.id} className="rounded border border-purple-200 bg-white p-3">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
-                <p className="font-medium text-gray-900">{itemDescription(item)}</p>
-                <p className="text-xs text-gray-500">{itemDiscipline(item)}</p>
+                <p className="font-medium text-purple-900">{itemDescription(item)}</p>
+                <p className="text-xs text-purple-600/90">{itemDiscipline(item)}</p>
               </div>
-              <span className="rounded px-2 py-0.5 text-xs text-gray-500">
+              <span className="rounded px-2 py-0.5 text-xs text-purple-600/90">
                 {itemStatusLabels[item.status] ?? item.status}
               </span>
             </div>
-            {item.evidenceText && <p className="mt-1 text-sm text-gray-500">{item.evidenceText}</p>}
-            {item.construflowRef && <p className="mt-1 text-sm text-gray-500">Construflow: {item.construflowRef}</p>}
+            {item.evidenceText && <p className="mt-1 text-sm text-purple-600/90">{item.evidenceText}</p>}
+            {item.construflowRef && <p className="mt-1 text-sm text-purple-600/90">Construflow: {item.construflowRef}</p>}
           </li>
         ))}
       </ul>

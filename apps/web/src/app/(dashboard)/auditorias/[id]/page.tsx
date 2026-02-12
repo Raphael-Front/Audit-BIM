@@ -117,6 +117,7 @@ export default function AuditoriaDetailPage() {
 
         <div className="mt-6 flex flex-wrap gap-3">
           <Link to={`/auditorias/${id}/execucao`} className="rounded-xl bg-[hsl(var(--accent))] px-4 py-2 text-sm font-medium text-[hsl(var(--accent-foreground))] hover:opacity-90">Execução</Link>
+          <Link to={`/auditorias/${id}/relatorios`} className="rounded-xl border border-[hsl(var(--border))] px-4 py-2 text-sm font-medium hover:bg-[hsl(var(--muted))]">Relatório</Link>
           <Link to={`/auditorias/${id}/ncs`} className="rounded-xl border border-[hsl(var(--border))] px-4 py-2 text-sm font-medium hover:bg-[hsl(var(--muted))]">NCs</Link>
           {podeCancelar && (
             <button

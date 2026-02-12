@@ -29,9 +29,9 @@ export default function TemplateNewPage() {
   return (
     <Container>
       <div className="mb-6">
-        <Link to="/templates" className="text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]">← Biblioteca</Link>
+        <Link to="/templates" className="text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--macro))]">← Biblioteca</Link>
       </div>
-      <h1 className="text-3xl font-semibold tracking-tight text-[hsl(var(--foreground))]">Nova disciplina</h1>
+      <h1 className="text-3xl font-semibold tracking-tight text-[hsl(var(--macro))]">Nova disciplina</h1>
       <form onSubmit={handleSubmit} className="mt-8 max-w-md space-y-4">
         <div>
           <label htmlFor="nome" className="block text-sm font-medium text-[hsl(var(--foreground))]">Nome *</label>

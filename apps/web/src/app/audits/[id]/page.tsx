@@ -77,7 +77,7 @@ export default function AuditDetailPage() {
       <div className="mb-6 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h1 className="text-xl font-semibold text-[hsl(var(--foreground))]">{(audit as AuditDetail).title}</h1>
-          <span className={`rounded-full px-2 py-0.5 text-sm ${(audit as AuditDetail).status === "COMPLETED" ? "bg-emerald-100 text-emerald-800" : (audit as AuditDetail).status === "WAITING_FOR_ISSUES" ? "bg-amber-100 text-amber-800" : (audit as AuditDetail).status === "CANCELED" ? "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]" : "bg-blue-100 text-blue-800"}`}>
+          <span className={`rounded-full px-2 py-0.5 text-sm ${(audit as AuditDetail).status === "COMPLETED" ? "bg-emerald-100 text-emerald-800" : (audit as AuditDetail).status === "WAITING_FOR_ISSUES" ? "bg-amber-100 text-amber-800" : (audit as AuditDetail).status === "CANCELED" ? "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]" : "bg-purple-100 text-purple-800"}`}>
             {statusLabels[(audit as AuditDetail).status] ?? (audit as AuditDetail).status}
           </span>
         </div>
@@ -97,7 +97,7 @@ export default function AuditDetailPage() {
             <button
               onClick={() => finishVerification.mutate()}
               disabled={finishVerification.isPending}
-              className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              className="rounded bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:opacity-50"
             >
               {finishVerification.isPending ? "Processando..." : "Finalizar verificação"}
             </button>

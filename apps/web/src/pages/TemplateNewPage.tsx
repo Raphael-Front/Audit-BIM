@@ -29,16 +29,16 @@ export function TemplateNewPage() {
   return (
     <Container>
       <div className="mb-6">
-        <Link to="/templates" className="text-sm text-gray-500 hover:text-gray-900">← Biblioteca</Link>
+        <Link to="/templates" className="text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--macro))]">← Biblioteca</Link>
       </div>
-      <h1 className="text-3xl font-semibold tracking-tight text-gray-900">Nova disciplina</h1>
+      <h1 className="text-3xl font-semibold tracking-tight text-[hsl(var(--macro))]">Nova disciplina</h1>
       <form onSubmit={handleSubmit} className="mt-8 max-w-md space-y-4">
         <div>
-          <label htmlFor="nome" className="block text-sm font-medium text-gray-700">Nome *</label>
-          <input id="nome" value={nome} onChange={(e) => setNome(e.target.value)} required className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-3 py-2" placeholder="Ex: Arquitetura, Estrutura" />
+          <label htmlFor="nome" className="block text-sm font-medium text-[hsl(var(--foreground))]">Nome *</label>
+          <input id="nome" value={nome} onChange={(e) => setNome(e.target.value)} required className="mt-1 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2 text-[hsl(var(--foreground))]" placeholder="Ex: Arquitetura, Estrutura" />
         </div>
         {error && <p className="text-sm text-red-600">{error}</p>}
-        <button type="submit" disabled={loading} className="rounded-xl bg-blue-600 px-4 py-2 font-medium text-white hover:opacity-90 disabled:opacity-50">Criar disciplina</button>
+        <button type="submit" disabled={loading} className="rounded-xl bg-[hsl(var(--accent))] px-4 py-2 font-medium text-[hsl(var(--accent-foreground))] hover:opacity-90 disabled:opacity-50">Criar disciplina</button>
       </form>
     </Container>
   );

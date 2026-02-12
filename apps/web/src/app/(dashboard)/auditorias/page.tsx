@@ -13,7 +13,7 @@ export default async function AuditoriasPage() {
     <Container>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-[hsl(var(--foreground))]">Auditorias</h1>
+          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-[hsl(var(--macro))]">Auditorias</h1>
           <p className="text-sm text-[hsl(var(--muted-foreground))]">Planejamento e execução</p>
         </div>
         <Link

@@ -15,12 +15,14 @@ import { AuditoriaNewPage } from "@/pages/AuditoriaNewPage";
 import { AuditoriaDetailPage } from "@/pages/AuditoriaDetailPage";
 import { ExecucaoPage } from "@/pages/ExecucaoPage";
 import { NCsPage } from "@/pages/NCsPage";
+import { RelatoriosListPage } from "@/pages/RelatoriosListPage";
 import { RelatoriosPage } from "@/pages/RelatoriosPage";
 import { TemplatesPage } from "@/pages/TemplatesPage";
 import { TemplateNewPage } from "@/pages/TemplateNewPage";
 import { TemplateDetailPage } from "@/pages/TemplateDetailPage";
 import { AuditsPage } from "@/pages/AuditsPage";
 import { AuditDetailPage } from "@/pages/AuditDetailPage";
+import { ConfiguracoesPage } from "@/pages/ConfiguracoesPage";
 
 function HomeRedirect() {
   const [dest, setDest] = useState<"/dashboard" | "/login" | null>(null);
@@ -34,7 +36,7 @@ function HomeRedirect() {
   if (dest === null) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p className="text-sm text-gray-500">Carregando…</p>
+        <p className="text-sm text-purple-600/90">Carregando…</p>
       </div>
     );
   }
@@ -137,6 +139,26 @@ export default function App() {
           <ProtectedRoute>
             <DashboardLayout>
               <NCsPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/relatorios"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <RelatoriosListPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/configuracoes"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <ConfiguracoesPage />
             </DashboardLayout>
           </ProtectedRoute>
         }

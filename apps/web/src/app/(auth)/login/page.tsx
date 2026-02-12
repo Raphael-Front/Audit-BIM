@@ -31,7 +31,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center px-4 bg-[hsl(var(--background))]">
       <div className="w-full max-w-sm space-y-8 rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-8 shadow-sm">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-[hsl(var(--foreground))]">BIM Audit Cloud</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-[hsl(var(--foreground))]">BIM Audit</h1>
           <p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">Entre com sua conta</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">

@@ -238,10 +238,12 @@ export async function libraryCategories(disciplineId?: string): Promise<Category
 }
 
 export async function libraryChecklistItems(params?: {
+  disciplineId?: string;
   categoryId?: string;
   auditPhaseId?: string;
 }): Promise<ChecklistItemRow[]> {
   let q = supabase.from("tbl_checklist_template").select("id, itemVerificacao, categoriaId, peso, pontosMaximo").eq("ativo", true);
+  if (params?.disciplineId) q = q.eq("disciplinaId", params.disciplineId);
   if (params?.categoryId) q = q.eq("categoriaId", params.categoryId);
   const { data: items, error } = await q.order("ordemExibicao");
   if (error) throw new Error(error.message);
@@ -307,6 +309,35 @@ export type AuditItemRow = {
   nextReviewAt?: string | null;
   checklistItem?: { description: string; category?: { name: string; discipline?: { name: string } } };
   customItem?: { description: string; discipline?: { name: string }; category?: { name: string } };
+};
+
+/** Itens com pontos para relatório e cálculo de score */
+export type AuditReportItemRow = AuditItemRow & {
+  pontosMaximo: number;
+  pontosObtidos: number;
+  disciplineId?: string;
+  disciplineName?: string;
+};
+
+/** Dados consolidados do relatório (score calculado a partir dos itens) */
+export type AuditReportScore = {
+  scoreGeral: number;
+  pontosObtidos: number;
+  pontosPossiveis: number;
+  totalItens: number;
+  totalAplicavel: number;
+  totalConforme: number;
+  totalNaoConforme: number;
+  totalNA: number;
+};
+
+export type AuditReportScoreByDiscipline = {
+  disciplineId: string;
+  disciplineName: string;
+  score: number;
+  pontosObtidos: number;
+  pontosPossiveis: number;
+  totalAplicavel: number;
 };
 
 function toAuditListItem(a: {
@@ -421,13 +452,111 @@ export async function auditItems(id: string): Promise<AuditItemRow[]> {
         ? {
             description: tpl.itemVerificacao,
             category: tpl.dim_categorias
-              ? { name: tpl.dim_categorias.nome, discipline: tpl.dim_disciplinas ? { name: tpl.dim_disciplinas.nome } : undefined }
+              ? { name: tpl.dim_categorias.nome, discipline: tpl.dim_categorias.dim_disciplinas ? { name: tpl.dim_categorias.dim_disciplinas.nome } : undefined }
               : undefined,
           }
         : undefined,
       customItem: undefined,
     };
   });
+}
+
+/** Itens da auditoria com pontos e disciplina para relatório e score */
+export async function auditItemsForReport(id: string): Promise<AuditReportItemRow[]> {
+  const { data, error } = await supabase
+    .from("fato_auditoria_itens")
+    .select(`
+      id, status, evidenciaObservacao, codigoConstruflow, proximaRevisao, pontosMaximoSnapshot, pontosObtidos, disciplinaId,
+      dim_disciplinas!fato_auditoria_itens_disciplinaId_fkey(nome),
+      tbl_checklist_template!fato_auditoria_itens_templateItemId_fkey(itemVerificacao, dim_categorias(nome, dim_disciplinas(nome)))
+    `)
+    .eq("auditoriaId", id)
+    .order("ordemExibicao");
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r: Record<string, unknown>) => {
+    const tpl = r.tbl_checklist_template as { itemVerificacao: string; dim_categorias?: { nome: string; dim_disciplinas?: { nome: string } } } | null;
+    const dbStatus = r.status as string;
+    const disc = r.dim_disciplinas as { nome: string } | null;
+    const pontosMax = Number((r as { pontosMaximoSnapshot?: string | number }).pontosMaximoSnapshot ?? 0);
+    const pontosObt = Number((r as { pontosObtidos?: string | number }).pontosObtidos ?? 0);
+    return {
+      id: r.id as string,
+      status: STATUS_FROM_DB[dbStatus as string] ?? (dbStatus as string),
+      evidenceText: (r.evidenciaObservacao as string) ?? null,
+      construflowRef: (r.codigoConstruflow as string) ?? null,
+      nextReviewAt: (r.proximaRevisao as string) ?? null,
+      pontosMaximo: pontosMax,
+      pontosObtidos: pontosObt,
+      disciplineId: (r.disciplinaId as string) ?? undefined,
+      disciplineName: disc?.nome ?? undefined,
+      checklistItem: tpl
+        ? {
+            description: tpl.itemVerificacao,
+            category: tpl.dim_categorias
+              ? { name: tpl.dim_categorias.nome, discipline: tpl.dim_categorias.dim_disciplinas ? { name: tpl.dim_categorias.dim_disciplinas.nome } : undefined }
+              : undefined,
+          }
+        : undefined,
+      customItem: undefined,
+    };
+  });
+}
+
+/** Pontos efetivos por item conforme FR-14: conforme = 100%, não conforme = 0%, N/A excluído */
+function pontosEfetivosPorStatus(item: AuditReportItemRow): number {
+  if (item.status === "NA") return 0;
+  if (item.status === "CONFORMING") return item.pontosMaximo;
+  if (item.status === "NONCONFORMING" || item.status === "NOT_STARTED") return 0;
+  if (item.status === "OBSERVATION") return Math.round(item.pontosMaximo * 0.5 * 100) / 100; // parcial (opcional)
+  return Number(item.pontosObtidos) || 0;
+}
+
+/** Calcula score geral e por disciplina a partir dos itens do relatório */
+export function computeAuditScores(
+  items: AuditReportItemRow[]
+): { score: AuditReportScore; byDiscipline: AuditReportScoreByDiscipline[] } {
+  const aplicaveis = items.filter((i) => i.status !== "NA");
+  const pontosObtidos = aplicaveis.reduce((s, i) => s + pontosEfetivosPorStatus(i), 0);
+  const pontosPossiveis = aplicaveis.reduce((s, i) => s + i.pontosMaximo, 0);
+  const scoreGeral = pontosPossiveis > 0 ? Math.round((pontosObtidos / pontosPossiveis) * 100 * 100) / 100 : 0;
+  const byDisciplineMap = new Map<string, { name: string; obtidos: number; possiveis: number; aplicavel: number }>();
+  for (const i of aplicaveis) {
+    const key = i.disciplineId ?? "";
+    const name = i.disciplineName ?? "Outros";
+    if (!byDisciplineMap.has(key)) byDisciplineMap.set(key, { name, obtidos: 0, possiveis: 0, aplicavel: 0 });
+    const d = byDisciplineMap.get(key)!;
+    d.obtidos += pontosEfetivosPorStatus(i);
+    d.possiveis += i.pontosMaximo;
+    d.aplicavel += 1;
+  }
+  const byDiscipline: AuditReportScoreByDiscipline[] = [];
+  byDisciplineMap.forEach((v, disciplineId) => {
+    const score = v.possiveis > 0 ? Math.round((v.obtidos / v.possiveis) * 100 * 100) / 100 : 0;
+    byDiscipline.push({
+      disciplineId,
+      disciplineName: v.name,
+      score,
+      pontosObtidos: v.obtidos,
+      pontosPossiveis: v.possiveis,
+      totalAplicavel: v.aplicavel,
+    });
+  });
+  const totalConforme = items.filter((i) => i.status === "CONFORMING").length;
+  const totalNaoConforme = items.filter((i) => i.status === "NONCONFORMING").length;
+  const totalNA = items.filter((i) => i.status === "NA").length;
+  return {
+    score: {
+      scoreGeral,
+      pontosObtidos,
+      pontosPossiveis,
+      totalItens: items.length,
+      totalAplicavel: aplicaveis.length,
+      totalConforme,
+      totalNaoConforme,
+      totalNA,
+    },
+    byDiscipline,
+  };
 }
 
 export async function auditFinishVerification(id: string): Promise<AuditDetail> {
@@ -652,6 +781,120 @@ async function libraryCreateChecklistItem(body: {
     weight: body.weight ?? 1,
     maxPoints: body.maxPoints ?? 1,
   };
+}
+
+/** Cria um item de verificação na biblioteca (disciplina + categoria) e vincula a todas as fases. Apenas auditor_bim ou admin_bim. */
+export async function createLibraryVerificationItem(body: {
+  disciplineId: string;
+  categoryId: string;
+  itemVerificacao: string;
+  peso?: number;
+  pontosMaximo?: number;
+}): Promise<ChecklistItemRow> {
+  const me = await authMe();
+  if (me.role === "leitor") throw new Error("Sem permissão para adicionar itens na biblioteca.");
+  const { data: link } = await supabase
+    .from("dim_categorias_disciplinas")
+    .select("disciplinaId")
+    .eq("categoriaId", body.categoryId)
+    .eq("disciplinaId", body.disciplineId)
+    .single();
+  if (!link) throw new Error("Categoria não está vinculada a esta disciplina");
+  const { data: item, error: errItem } = await supabase
+    .from("tbl_checklist_template")
+    .insert({
+      disciplinaId: body.disciplineId,
+      categoriaId: body.categoryId,
+      itemVerificacao: body.itemVerificacao.trim(),
+      peso: body.peso ?? 1,
+      pontosMaximo: Math.round(Number(body.pontosMaximo) || 1),
+      ordemExibicao: 0,
+      ativo: true,
+    })
+    .select("id, itemVerificacao, categoriaId, peso, pontosMaximo")
+    .single();
+  if (errItem) throw new Error(errItem.message);
+  const { data: fases } = await supabase
+    .from("dim_fases")
+    .select("id")
+    .eq("ativo", true);
+  const faseIds = (fases ?? []).map((f) => f.id);
+  if (faseIds.length > 0) {
+    await supabase.from("tbl_template_aplicabilidade_fases").insert(
+      faseIds.map((faseId) => ({
+        templateItemId: item.id,
+        faseId,
+        obrigatorio: false,
+      }))
+    );
+  }
+  return {
+    id: item.id,
+    description: item.itemVerificacao,
+    categoryId: item.categoriaId,
+    auditPhaseId: "",
+    weight: item.peso,
+    maxPoints: Number(item.pontosMaximo),
+  };
+}
+
+/** Atualiza um item de verificação da biblioteca. Apenas auditor_bim ou admin_bim. */
+export async function updateLibraryVerificationItem(
+  itemId: string,
+  body: { itemVerificacao?: string; peso?: number; pontosMaximo?: number }
+): Promise<ChecklistItemRow> {
+  const me = await authMe();
+  if (me.role === "leitor") throw new Error("Sem permissão para editar itens da biblioteca.");
+  const updates: { itemVerificacao?: string; peso?: number; pontosMaximo?: number } = {};
+  if (body.itemVerificacao !== undefined) updates.itemVerificacao = body.itemVerificacao.trim();
+  if (body.peso !== undefined) updates.peso = body.peso;
+  if (body.pontosMaximo !== undefined) updates.pontosMaximo = Math.round(Number(body.pontosMaximo)) || 1;
+  if (Object.keys(updates).length === 0) {
+    const { data } = await supabase
+      .from("tbl_checklist_template")
+      .select("id, itemVerificacao, categoriaId, peso, pontosMaximo")
+      .eq("id", itemId)
+      .single();
+    if (!data) throw new Error("Item não encontrado");
+    return {
+      id: data.id,
+      description: data.itemVerificacao,
+      categoryId: data.categoriaId,
+      auditPhaseId: "",
+      weight: data.peso,
+      maxPoints: Number(data.pontosMaximo),
+    };
+  }
+  const { data, error } = await supabase
+    .from("tbl_checklist_template")
+    .update(updates)
+    .eq("id", itemId)
+    .select("id, itemVerificacao, categoriaId, peso, pontosMaximo")
+    .single();
+  if (error) throw new Error(error.message);
+  return {
+    id: data.id,
+    description: data.itemVerificacao,
+    categoryId: data.categoriaId,
+    auditPhaseId: "",
+    weight: data.peso,
+    maxPoints: Number(data.pontosMaximo),
+  };
+}
+
+/** Inativa um item de verificação (soft delete). Apenas auditor_bim ou admin_bim. */
+export async function deleteLibraryVerificationItem(itemId: string): Promise<void> {
+  const me = await authMe();
+  if (me.role === "leitor") throw new Error("Sem permissão para excluir itens da biblioteca.");
+  const { error } = await supabase
+    .from("tbl_checklist_template")
+    .update({
+      ativo: false,
+      inativadoEm: new Date().toISOString(),
+      inativadoPorId: me.id,
+    })
+    .eq("id", itemId);
+  if (error) throw new Error(error.message);
 }
 
 async function createAudit(body: {

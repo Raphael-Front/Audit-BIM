@@ -14,7 +14,7 @@ export default async function DashboardPage() {
     <Container>
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-[hsl(var(--foreground))]">Dashboard</h1>
+          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-[hsl(var(--macro))]">Dashboard</h1>
           <p className="text-sm text-[hsl(var(--muted-foreground))]">Visão geral do sistema</p>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -34,7 +34,7 @@ export default async function DashboardPage() {
           </div>
         </div>
         <div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 shadow-sm">
-          <h2 className="text-lg font-medium text-[hsl(var(--foreground))]">Auditorias recentes</h2>
+          <h2 className="text-lg font-medium text-[hsl(var(--macro))]">Auditorias recentes</h2>
           <ul className="mt-4 space-y-2">
             {recent.map((a) => (
               <li key={a.id} className="flex items-center justify-between rounded-xl border border-[hsl(var(--border))] px-4 py-2">
