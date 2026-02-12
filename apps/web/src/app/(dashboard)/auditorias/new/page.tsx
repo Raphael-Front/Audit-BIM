@@ -12,6 +12,7 @@ import {
   authMe,
   api,
   type WorkRow,
+  type PhaseRow,
   type DisciplineRow,
   type CategoryRow,
 } from "@/lib/api";
@@ -24,7 +25,7 @@ export default function NewAuditoriaPage() {
   const [title, setTitle] = useState("");
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
   const [works, setWorks] = useState<WorkRow[]>([]);
-  const [phases, setPhases] = useState<{ id: string; name: string }[]>([]);
+  const [phases, setPhases] = useState<PhaseRow[]>([]);
   const [disciplines, setDisciplines] = useState<DisciplineRow[]>([]);
   const [categories, setCategories] = useState<CategoryRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -56,6 +57,24 @@ export default function NewAuditoriaPage() {
     }
     libraryCategories(disciplineId).then(setCategories).catch(() => setCategories([]));
   }, [disciplineId]);
+
+  // Auto-preenche o título (somente leitura): Código da obra - Código da disciplina - Código da fase (ex: R15RV-EST-PB)
+  useEffect(() => {
+    if (!workId || !phaseId || !disciplineId) {
+      setTitle("");
+      return;
+    }
+    const work = works.find((w) => w.id === workId);
+    const phase = phases.find((p) => p.id === phaseId);
+    const discipline = disciplines.find((d) => d.id === disciplineId);
+    if (!work || !phase || !discipline) return;
+    const codeWork = (work.code || work.name).trim() || "";
+    const codeDiscipline = (discipline.code || discipline.name).trim() || "";
+    const codePhase = (phase.code || phase.name).trim() || "";
+    if (codeWork && codeDiscipline && codePhase) {
+      setTitle(`${codeWork}-${codeDiscipline}-${codePhase}`);
+    }
+  }, [workId, phaseId, disciplineId, works, phases, disciplines]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -122,7 +141,7 @@ export default function NewAuditoriaPage() {
         </div>
         <div>
           <label htmlFor="title" className="block text-sm font-medium text-[hsl(var(--foreground))]">Título</label>
-          <input id="title" value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2" placeholder="Ex.: Auditoria PL - Estrutura" />
+          <input id="title" value={title} readOnly className="mt-1 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--muted))] px-3 py-2 cursor-not-allowed" placeholder="Preenchido automaticamente ao selecionar obra, fase e disciplina" />
         </div>
         <div>
           <label htmlFor="startDate" className="block text-sm font-medium text-[hsl(var(--foreground))]">Data início *</label>

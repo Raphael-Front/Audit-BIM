@@ -18,7 +18,7 @@ export class AuthService {
     });
     if (!user || !user.ativo)
       throw new UnauthorizedException('Invalid credentials');
-    if (!compareSync(password, user.senhaHash))
+    if (!user.senhaHash || !compareSync(password, user.senhaHash))
       throw new UnauthorizedException('Invalid credentials');
 
     const payload: AuthUser = {

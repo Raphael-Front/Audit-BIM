@@ -90,7 +90,7 @@ export class LibraryService {
       });
     }
     const links = await this.prisma.dimCategoriaDisciplina.findMany({
-      where: { disciplinaId },
+      where: { disciplinaId: disciplineId },
       orderBy: { ordemExibicao: 'asc' },
       include: { categoria: true },
     });
@@ -98,7 +98,7 @@ export class LibraryService {
       .filter((l) => l.categoria.ativo)
       .map((l) => ({
         ...l.categoria,
-        disciplinaId,
+        disciplinaId: disciplineId,
         ordemExibicao: l.ordemExibicao,
         disciplina: { id: disciplineId },
       }));
@@ -146,7 +146,7 @@ export class LibraryService {
     if (!disc) throw new NotFoundException('Discipline not found');
     const existing = await this.prisma.dimCategoriaDisciplina.findUnique({
       where: {
-        categoriaId_disciplinaId: { categoriaId: categoryId, disciplinaId },
+        categoriaId_disciplinaId: { categoriaId: categoryId, disciplinaId: disciplineId },
       },
     });
     if (existing)
@@ -155,14 +155,14 @@ export class LibraryService {
       order ??
       (await this.prisma.dimCategoriaDisciplina
         .aggregate({
-          where: { disciplinaId },
+          where: { disciplinaId: disciplineId },
           _max: { ordemExibicao: true },
         })
         .then((r) => (r._max.ordemExibicao ?? -1) + 1));
     return this.prisma.dimCategoriaDisciplina.create({
       data: {
         categoriaId: categoryId,
-        disciplinaId,
+        disciplinaId: disciplineId,
         ordemExibicao: nextOrder,
       },
       include: { categoria: true, disciplina: true },

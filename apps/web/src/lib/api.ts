@@ -159,19 +159,20 @@ export async function workUpdate(
   return toWorkRow(data);
 }
 
-export async function worksPhases(_workId: string): Promise<{ id: string; name: string; order: number }[]> {
+export type PhaseRow = { id: string; name: string; code: string | null; order: number };
+export async function worksPhases(_workId: string): Promise<PhaseRow[]> {
   const { data, error } = await supabase
     .from("dim_fases")
-    .select("id, nome, ordemSequencial")
+    .select("id, nome, codigo, ordemSequencial")
     .eq("ativo", true)
     .order("ordemSequencial");
   if (error) throw new Error(error.message);
-  return (data ?? []).map((r) => ({ id: r.id, name: r.nome, order: r.ordemSequencial }));
+  return (data ?? []).map((r) => ({ id: r.id, name: r.nome, code: r.codigo ?? null, order: r.ordemSequencial }));
 }
 
 // --- Library ---
 export type AuditPhaseRow = { id: string; name: string; label: string; order: number };
-export type DisciplineRow = { id: string; name: string; order: number };
+export type DisciplineRow = { id: string; name: string; code: string | null; order: number };
 export type CategoryRow = { id: string; name: string; disciplineId: string; order: number };
 export type ChecklistItemRow = {
   id: string;
@@ -195,11 +196,11 @@ export async function libraryAuditPhases(): Promise<AuditPhaseRow[]> {
 export async function libraryDisciplines(): Promise<DisciplineRow[]> {
   const { data, error } = await supabase
     .from("dim_disciplinas")
-    .select("id, nome")
+    .select("id, nome, codigo")
     .eq("ativo", true)
     .order("nome");
   if (error) throw new Error(error.message);
-  return (data ?? []).map((r, i) => ({ id: r.id, name: r.nome, order: i }));
+  return (data ?? []).map((r, i) => ({ id: r.id, name: r.nome, code: r.codigo ?? null, order: i }));
 }
 
 export async function libraryCategories(disciplineId?: string): Promise<CategoryRow[]> {
