@@ -1,6 +1,6 @@
 import { useNavigate, Link } from "react-router-dom";
 import { login, setToken } from "@/lib/api";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
 
 export function LoginPage() {
@@ -12,6 +12,15 @@ export function LoginPage() {
   const { theme } = useTheme();
 
   const cardClass = theme === "gpl" ? "login-card-gpl" : "login-card-theme";
+
+  useEffect(() => {
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+    };
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -33,11 +42,11 @@ export function LoginPage() {
       <div className="login-screen-content">
         <div aria-hidden="true" />
         <div className="login-screen-card-wrapper">
-        <div className={`${cardClass} w-full max-w-sm space-y-8 rounded-2xl border p-8 shadow-lg backdrop-blur-sm`}>
+        <div className={`${cardClass} w-full space-y-5 rounded-xl px-6 py-5`}>
         <div>
           <p className="text-sm text-[hsl(var(--login-card-muted))]">Entre com sua conta</p>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-[hsl(var(--login-card-foreground))]">Email</label>
             <input
@@ -46,7 +55,7 @@ export function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="login-card-input mt-1 block w-full rounded-xl border px-3 py-2 placeholder:text-[hsl(var(--login-card-muted)/0.7)] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--login-card-ring))]"
+              className="login-card-input mt-1 block w-full rounded-xl border placeholder:text-[hsl(var(--login-card-muted)/0.7)] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--login-card-ring))]"
             />
           </div>
           <div>
@@ -57,18 +66,18 @@ export function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="login-card-input mt-1 block w-full rounded-xl border px-3 py-2 placeholder:text-[hsl(var(--login-card-muted)/0.7)] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--login-card-ring))]"
+              className="login-card-input mt-1 block w-full rounded-xl border placeholder:text-[hsl(var(--login-card-muted)/0.7)] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--login-card-ring))]"
             />
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
           <button
             type="submit"
             disabled={loading}
-            className="login-card-btn w-full rounded-xl px-4 py-2 font-medium hover:opacity-90 disabled:opacity-50 transition-colors"
+            className="login-card-btn w-full rounded-xl px-6 py-2.5 text-base font-medium hover:opacity-90 disabled:opacity-50 transition-colors"
           >
             {loading ? "Entrando…" : "Entrar"}
           </button>
-          <div className="space-y-2 text-center">
+          <div className="space-y-2 pt-1 text-center">
             <Link
               to="/forgot-password"
               className="block text-sm text-[hsl(var(--login-card-muted))] hover:text-[hsl(var(--login-card-foreground))] transition-colors"

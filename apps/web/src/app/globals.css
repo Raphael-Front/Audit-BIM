@@ -133,21 +133,24 @@
   50%     { filter: drop-shadow(0 0 28px rgba(147 51 234 0.55)) drop-shadow(0 0 50px rgba(147 51 234 0.25)); }
 }
 
-/* Tela de login: fundo split (bege + dark com edifício) + card sobreposto à direita */
+/* Tela de login: ocupa toda a tela, sem scroll */
 .login-screen {
-  min-height: 100vh;
-  position: relative;
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
   overflow: hidden;
+  background-color: #fff;
 }
 
-/* Fundo padrão: login2-bg.png (tema light/dark) */
+/* Fundo padrão: login2-bg.png – cover preenche a tela, centro da imagem no centro da tela */
 .login-screen::before {
   content: "";
   position: absolute;
   inset: 0;
   background-image: url("/login2-bg.png");
   background-size: cover;
-  background-position: center;
+  background-position: center center;
   background-repeat: no-repeat;
   z-index: 0;
 }
@@ -157,58 +160,71 @@
   background-image: url("/login-bg.png");
 }
 
-/* Overlay sutil com cor do tema (baixa opacidade para não esconder o fundo) */
-.login-screen::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: hsl(var(--accent) / 0.08);
-  z-index: 1;
-}
-
-/* Layout split: esquerda ~35% (logo no fundo), direita ~65% (imagem) com card centralizado */
+/* Layout: esquerda = edifício, direita = área branca com logo + card centralizado abaixo */
 .login-screen-content {
   position: relative;
   z-index: 2;
   display: grid;
-  grid-template-columns: 35% 1fr;
-  min-height: 100vh;
+  grid-template-columns: 1fr 35%;
+  width: 100%;
+  height: 100vh;
+  max-height: 100vh;
+  min-height: 0;
   padding: 0;
+  overflow: hidden;
+  background: transparent !important;
 }
 
 .login-screen-card-wrapper {
   display: flex;
-  justify-content: center;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  width: 100%;
+  max-width: 448px;
   padding: 2rem;
-  padding-top: 10vh; /* Desloca o card um pouco para baixo para alinhar com a logo */
+  padding-top: 16rem; /* Card abaixo da logo AUDIT BIM */
+  margin: 0 auto;
+  background: transparent !important;
 }
 
-/* Card de login – paleta extraída da logo e fundo da logo (login-bg.png) */
+/* Card de login – paleta GPL, card invisível */
 .login-card-gpl {
-  /* Fundo bege da área da logo – #EDE8D9 */
-  --login-card-bg: 43 36% 89%;
-  /* Verde-oliva escuro do cubo e texto "AUDIT BIM" – #4A5B49 */
   --login-card-foreground: 117 11% 32%;
-  /* Verde sálvia para texto secundário – #85A182 */
   --login-card-muted: 114 13% 57%;
-  /* Verde sálvia claro para bordas – #9AB690 */
   --login-card-border: 105 18% 64%;
-  /* Inputs: fundo branco suave, borda no tom da logo */
-  --login-card-input-bg: 43 36% 96%;
+  --login-card-input-bg: transparent;
   --login-card-input-border: 105 18% 70%;
-  /* Botão: verde principal do cubo – #5F745B */
   --login-card-accent: 112 12% 41%;
   --login-card-ring: 112 12% 41%;
 
-  background: hsl(var(--login-card-bg));
-  border-color: hsl(var(--login-card-border));
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
 }
 
 .login-card-gpl .login-card-input {
-  background: hsl(var(--login-card-input-bg));
-  border-color: hsl(var(--login-card-input-border));
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 1px solid hsl(var(--login-card-input-border) / 0.5);
   color: hsl(var(--login-card-foreground));
+  min-height: 40px;
+  padding: 0.5rem 0.75rem;
+  font-size: 1rem;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.login-card-gpl .login-card-input::-webkit-scrollbar {
+  display: none;
+}
+.login-card-gpl .login-card-input::-webkit-outer-spin-button,
+.login-card-gpl .login-card-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .login-card-gpl .login-card-btn {
@@ -216,24 +232,43 @@
   color: white;
 }
 
-/* Card de login para tema light/dark (login2-bg.png) – usa variáveis do tema */
+/* Card de login para tema light/dark (login2-bg.png) – invisível, só campos e texto */
 .login-card-theme {
   --login-card-foreground: var(--foreground);
   --login-card-muted: var(--muted-foreground);
   --login-card-border: var(--border);
-  --login-card-input-bg: var(--background);
+  --login-card-input-bg: transparent;
   --login-card-input-border: var(--input);
   --login-card-accent: var(--accent);
   --login-card-ring: var(--ring);
 
-  background: hsl(var(--card));
-  border: 1px solid hsl(var(--border));
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
 }
 
 .login-card-theme .login-card-input {
-  background: hsl(var(--login-card-input-bg));
-  border: 1px solid hsl(var(--login-card-input-border));
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 1px solid hsl(var(--login-card-input-border) / 0.5);
   color: hsl(var(--login-card-foreground));
+  min-height: 40px;
+  padding: 0.5rem 0.75rem;
+  font-size: 1rem;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.login-card-theme .login-card-input::-webkit-scrollbar {
+  display: none;
+}
+.login-card-theme .login-card-input::-webkit-outer-spin-button,
+.login-card-theme .login-card-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .login-card-theme .login-card-input::placeholder {

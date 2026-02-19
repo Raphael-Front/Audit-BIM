@@ -2,6 +2,7 @@ import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Container } from "@/components/layout/Container";
 import { auditGet, auditItems, auditFinishVerification, auditComplete, auditCancel, type AuditDetail, type AuditItemRow } from "@/lib/api";
+import { EvidenciaLink } from "@/components/evidencias/EvidenciaLink";
 
 const statusLabel: Record<string, string> = {
   NOT_STARTED: "Pendente",
@@ -134,13 +135,27 @@ export default function AuditoriaDetailPage() {
         <h2 className="text-lg font-medium text-[hsl(var(--foreground))]">Itens</h2>
         <ul className="mt-4 space-y-2">
           {(itens as AuditItemRow[]).slice(0, 20).map((i) => (
-            <li key={i.id} className="flex items-center justify-between rounded-xl border border-[hsl(var(--border))] px-4 py-3">
-              <p className="font-medium text-[hsl(var(--foreground))]">
-                {i.checklistItem?.description ?? i.customItem?.description ?? i.id}
-              </p>
-              <span className={`rounded-full px-3 py-1 text-xs font-medium ${i.status === "CONFORMING" ? "bg-emerald-600 text-white" : i.status === "NONCONFORMING" ? "bg-red-600 text-white" : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]"}`}>
-                {statusLabel[i.status] ?? i.status}
-              </span>
+            <li key={i.id} className="rounded-xl border border-[hsl(var(--border))] px-4 py-3">
+              <div className="flex items-center justify-between">
+                <p className="font-medium text-[hsl(var(--foreground))]">
+                  {i.checklistItem?.description ?? i.customItem?.description ?? i.id}
+                </p>
+                <span className={`rounded-full px-3 py-1 text-xs font-medium shrink-0 ${i.status === "CONFORMING" ? "bg-emerald-600 text-white" : i.status === "NONCONFORMING" ? "bg-red-600 text-white" : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]"}`}>
+                  {statusLabel[i.status] ?? i.status}
+                </span>
+              </div>
+              {i.status === "NONCONFORMING" && (i.evidenceText || (i.anexos?.length ?? 0) > 0) && (
+                <div className="mt-2 pt-2 border-t border-[hsl(var(--border))] text-sm">
+                  {i.evidenceText && <p className="text-[hsl(var(--muted-foreground))]">{i.evidenceText}</p>}
+                  {(i.anexos?.length ?? 0) > 0 && (
+                    <div className="mt-1 flex flex-wrap gap-2">
+                      {i.anexos!.map((a) => (
+                        <EvidenciaLink key={a.id} anexo={a} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </li>
           ))}
           {itens.length > 20 && <li className="text-sm text-[hsl(var(--muted-foreground))]">+ {itens.length - 20} itens</li>}

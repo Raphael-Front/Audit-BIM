@@ -108,7 +108,7 @@ export function AuditoriaNewPage() {
       <form onSubmit={handleSubmit} className="mt-8 max-w-md space-y-4">
         <div>
           <label htmlFor="work" className="block text-sm font-medium text-[hsl(var(--foreground))]">Obra *</label>
-          <select id="work" value={workId} onChange={(e) => setWorkId(e.target.value)} required className="mt-1 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2">
+          <select id="work" value={workId} onChange={(e) => setWorkId(e.target.value)} required className="mt-1 w-full rounded-xl border-2 border-[hsl(var(--border))] bg-[hsl(var(--card))] px-3 py-2.5 text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] focus:border-transparent">
             <option value="">Selecione</option>
             {works.map((w) => (
               <option key={w.id} value={w.id}>{w.name}</option>
@@ -117,7 +117,7 @@ export function AuditoriaNewPage() {
         </div>
         <div>
           <label htmlFor="phase" className="block text-sm font-medium text-[hsl(var(--foreground))]">Fase da obra *</label>
-          <select id="phase" value={phaseId} onChange={(e) => setPhaseId(e.target.value)} required className="mt-1 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2">
+          <select id="phase" value={phaseId} onChange={(e) => setPhaseId(e.target.value)} required className="mt-1 w-full rounded-xl border-2 border-[hsl(var(--border))] bg-[hsl(var(--card))] px-3 py-2.5 text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] focus:border-transparent">
             <option value="">Selecione</option>
             {phases.map((p) => (
               <option key={p.id} value={p.id}>{p.name}</option>
@@ -126,7 +126,7 @@ export function AuditoriaNewPage() {
         </div>
         <div>
           <label htmlFor="discipline" className="block text-sm font-medium text-[hsl(var(--foreground))]">Disciplina *</label>
-          <select id="discipline" value={disciplineId} onChange={(e) => setDisciplineId(e.target.value)} required className="mt-1 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2">
+          <select id="discipline" value={disciplineId} onChange={(e) => setDisciplineId(e.target.value)} required className="mt-1 w-full rounded-xl border-2 border-[hsl(var(--border))] bg-[hsl(var(--card))] px-3 py-2.5 text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] focus:border-transparent">
             <option value="">Selecione</option>
             {disciplines.map((d) => (
               <option key={d.id} value={d.id}>{d.name}</option>
@@ -135,11 +135,11 @@ export function AuditoriaNewPage() {
         </div>
         <div>
           <label htmlFor="title" className="block text-sm font-medium text-[hsl(var(--foreground))]">Título</label>
-          <input id="title" value={title} readOnly className="mt-1 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--muted))] px-3 py-2 cursor-not-allowed" placeholder="Preenchido automaticamente ao selecionar obra, fase e disciplina" />
+          <input id="title" value={title} readOnly className="mt-1 w-full rounded-xl border-2 border-[hsl(var(--border))] bg-[hsl(var(--muted))] px-3 py-2.5 text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--foreground))] placeholder:opacity-70 cursor-not-allowed" placeholder="Preenchido automaticamente ao selecionar obra, fase e disciplina" />
         </div>
         <div>
           <label htmlFor="startDate" className="block text-sm font-medium text-[hsl(var(--foreground))]">Data início *</label>
-          <input id="startDate" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required className="mt-1 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2" />
+          <input id="startDate" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required className="mt-1 w-full rounded-xl border-2 border-[hsl(var(--border))] bg-[hsl(var(--card))] px-3 py-2.5 text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] focus:border-transparent" />
         </div>
         {error && <p className="text-sm text-red-600">{error}</p>}
         <button type="submit" disabled={loading} className="rounded-xl bg-[hsl(var(--accent))] px-4 py-2 font-medium text-[hsl(var(--accent-foreground))] hover:opacity-90 disabled:opacity-50">Criar auditoria</button>

@@ -33,6 +33,7 @@ export function NCsPage() {
       descricao: i.checklistItem?.description ?? i.customItem?.description ?? i.id,
       observacoes: i.evidenceText ?? "",
       construflow_id: i.construflowRef ?? "",
+      anexos: i.anexos ?? [],
     }));
 
   return (

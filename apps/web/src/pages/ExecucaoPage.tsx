@@ -1,8 +1,9 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Container } from "@/components/layout/Container";
-import { useState, useEffect, useMemo } from "react";
-import { auditGet, auditItems, auditUpdateItem, auditFinishVerification, auditComplete, type AuditDetail, type AuditItemRow } from "@/lib/api";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { auditGet, auditItems, auditUpdateItem, auditUploadEvidence, auditDeleteEvidence, auditFinishVerification, auditComplete, type AuditDetail, type AuditItemRow } from "@/lib/api";
+import { EvidenciaLink } from "@/components/evidencias/EvidenciaLink";
 
 const STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: "NOT_STARTED", label: "Pendente" },
@@ -100,6 +101,17 @@ export function ExecucaoPage() {
       navigate(`/auditorias/${id}`, { replace: true });
     },
   });
+
+  const uploadEvidence = useMutation({
+    mutationFn: ({ itemId, file }: { itemId: string; file: File }) => auditUploadEvidence(id!, itemId, file),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["audit-items", id] }),
+  });
+  const deleteEvidence = useMutation({
+    mutationFn: ({ anexoId, storagePath }: { anexoId: string; storagePath: string }) =>
+      auditDeleteEvidence(anexoId, storagePath),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["audit-items", id] }),
+  });
+  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   function handleStatusChange(itemId: string, status: string) {
     updateItem.mutate({ itemId, status, evidenceText: evidenceText[itemId], construflowRef: construflowRef[itemId] || undefined });
@@ -258,6 +270,48 @@ export function ExecucaoPage() {
                               placeholder="ID do apontamento"
                               className="w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2 text-sm text-[hsl(var(--foreground))]"
                             />
+                            <div className="mt-3">
+                              <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">Anexar foto de evidência</label>
+                              <div className="flex flex-wrap gap-2 items-center">
+                                <input
+                                  ref={(el) => { fileInputRefs.current[i.id] = el; }}
+                                  type="file"
+                                  accept="image/jpeg,image/png,application/pdf"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      uploadEvidence.mutate({ itemId: i.id, file }, {
+                                        onSuccess: () => { e.target.value = ""; },
+                                      });
+                                    }
+                                  }}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => fileInputRefs.current[i.id]?.click()}
+                                  disabled={uploadEvidence.isPending}
+                                  className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm font-medium text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] disabled:opacity-50"
+                                >
+                                  {(uploadEvidence.isPending && uploadEvidence.variables?.itemId === i.id) ? "Enviando…" : "Selecionar imagem"}
+                                </button>
+                                <span className="text-xs text-[hsl(var(--muted-foreground))]">JPG, PNG ou PDF. Máx. 10MB</span>
+                              </div>
+                              {(i.anexos?.length ?? 0) > 0 && (
+                                <ul className="mt-2 space-y-1">
+                                  {i.anexos!.map((a) => (
+                                    <li key={a.id}>
+                                      <EvidenciaLink
+                                        anexo={a}
+                                        onDelete={async () =>
+                                          deleteEvidence.mutateAsync({ anexoId: a.id, storagePath: a.arquivoUrl })
+                                        }
+                                      />
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </div>
                           </>
                         )}
                       </div>

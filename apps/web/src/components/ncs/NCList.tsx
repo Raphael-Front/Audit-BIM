@@ -3,8 +3,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { auditUpdateItem } from "@/lib/api";
 import { useState } from "react";
+import { EvidenciaLink } from "@/components/evidencias/EvidenciaLink";
 
-type Item = { id: string; descricao: string; observacoes?: string | null; construflow_id?: string | null };
+type Anexo = { id: string; arquivoNome: string; arquivoUrl: string };
+type Item = { id: string; descricao: string; observacoes?: string | null; construflow_id?: string | null; anexos?: Anexo[] };
 
 export function NCList({ auditoriaId, initialItems }: { auditoriaId: string; initialItems: Item[] }) {
   const [local, setLocal] = useState<Record<string, string>>(
@@ -25,6 +27,16 @@ export function NCList({ auditoriaId, initialItems }: { auditoriaId: string; ini
         <li key={i.id} className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-4 shadow-sm">
           <p className="font-medium text-[hsl(var(--foreground))]">{i.descricao}</p>
           {i.observacoes && <p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">{i.observacoes}</p>}
+          {(i.anexos?.length ?? 0) > 0 && (
+            <div className="mt-2">
+              <span className="text-sm font-medium text-[hsl(var(--foreground))]">Fotos anexadas: </span>
+              <ul className="mt-1 flex flex-wrap gap-2">
+                {i.anexos!.map((a) => (
+                  <li key={a.id}><EvidenciaLink anexo={a} /></li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div className="mt-3 flex items-center gap-2">
             <label className="text-sm font-medium text-[hsl(var(--foreground))]">Construflow ID</label>
             <input

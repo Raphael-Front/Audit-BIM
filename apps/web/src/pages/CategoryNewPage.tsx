@@ -154,8 +154,8 @@ export function CategoryNewPage() {
               value={nome}
               onChange={(e) => setNome(e.target.value)}
               required
-              className="mt-1 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2 text-[hsl(var(--foreground))]"
               placeholder="Ex: Documentação, Modelagem, Coordenação"
+              className="mt-1 w-full rounded-xl border-2 border-[hsl(var(--foreground))]/30 bg-white px-3 py-2.5 text-[hsl(var(--foreground))] shadow-[0_1px_4px_rgba(0,0,0,0.15)] placeholder:text-[hsl(var(--muted-foreground))] focus:border-[hsl(var(--ring))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]/30"
             />
           </div>
         </div>
@@ -233,8 +233,8 @@ export function CategoryNewPage() {
                     onChange={(e) => updateVerificationItem(index, "description", e.target.value)}
                     required
                     rows={3}
-                    className="w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2 text-[hsl(var(--foreground))]"
                     placeholder="Descreva o item de verificação..."
+                    className="w-full rounded-xl border-2 border-[hsl(var(--foreground))]/30 bg-white px-3 py-2.5 text-[hsl(var(--foreground))] shadow-[0_1px_4px_rgba(0,0,0,0.15)] placeholder:text-[hsl(var(--muted-foreground))] focus:border-[hsl(var(--ring))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]/30"
                   />
                 </div>
 
@@ -250,7 +250,7 @@ export function CategoryNewPage() {
                       value={item.weight}
                       onChange={(e) => updateVerificationItem(index, "weight", parseInt(e.target.value) || 1)}
                       required
-                      className="w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2 text-[hsl(var(--foreground))]"
+                      className="w-full rounded-xl border-2 border-[hsl(var(--foreground))]/30 bg-white px-3 py-2.5 text-[hsl(var(--foreground))] shadow-[0_1px_4px_rgba(0,0,0,0.15)] placeholder:text-[hsl(var(--muted-foreground))] focus:border-[hsl(var(--ring))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]/30"
                     />
                   </div>
                   <div>
@@ -263,7 +263,7 @@ export function CategoryNewPage() {
                       value={item.maxPoints}
                       onChange={(e) => updateVerificationItem(index, "maxPoints", parseInt(e.target.value) || 1)}
                       required
-                      className="w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2 text-[hsl(var(--foreground))]"
+                      className="w-full rounded-xl border-2 border-[hsl(var(--foreground))]/30 bg-white px-3 py-2.5 text-[hsl(var(--foreground))] shadow-[0_1px_4px_rgba(0,0,0,0.15)] placeholder:text-[hsl(var(--muted-foreground))] focus:border-[hsl(var(--ring))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]/30"
                     />
                   </div>
                 </div>

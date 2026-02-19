@@ -92,7 +92,11 @@ export async function register(email: string, password: string, nomeCompleto: st
   const user = data.user;
   let { data: dimUser } = await supabase.from("dim_usuarios").select("id, email, nomeCompleto, perfil").eq("auth_user_id", user.id).maybeSingle();
   if (!dimUser) {
-    await supabase.rpc("ensure_dim_usuario").catch(() => {}); // Ignorar erro se RPC não existir
+    try {
+      await supabase.rpc("ensure_dim_usuario");
+    } catch {
+      /* Ignorar erro se RPC não existir */
+    }
     const { data: newDimUser } = await supabase.from("dim_usuarios").select("id, email, nomeCompleto, perfil").eq("auth_user_id", user.id).maybeSingle();
     dimUser = newDimUser ?? null;
   }
@@ -119,7 +123,11 @@ export async function login(email: string, password: string): Promise<LoginRespo
   const user = data.user;
   let { data: dimUser } = await supabase.from("dim_usuarios").select("id, email, nomeCompleto, perfil").eq("auth_user_id", user.id).maybeSingle();
   if (!dimUser) {
-    await supabase.rpc("ensure_dim_usuario").catch(() => {}); // Ignorar erro se RPC não existir
+    try {
+      await supabase.rpc("ensure_dim_usuario");
+    } catch {
+      /* Ignorar erro se RPC não existir */
+    }
     const { data: newDimUser } = await supabase.from("dim_usuarios").select("id, email, nomeCompleto, perfil").eq("auth_user_id", user.id).maybeSingle();
     dimUser = newDimUser ?? null;
   }
@@ -204,6 +212,94 @@ export type WorkRow = {
   phases?: { id: string; name: string; order: number }[];
 };
 
+// --- Dashboard Stats ---
+export type DashboardStats = {
+  auditsCount: number;
+  totalItems: number;
+  nextAuditDate: string | null;
+  nextAuditSection: string | null;
+};
+
+export type WorstDiscipline = { disciplineName: string; errorCount: number };
+export type ErrorByCategory = { categoryName: string; major: number; minor: number };
+
+export async function dashboardStats(): Promise<DashboardStats> {
+  const today = new Date().toISOString().slice(0, 10);
+
+  const [auditsRes, itemsRes, nextRes] = await Promise.all([
+    supabase
+      .from("fato_auditorias")
+      .select("id", { count: "exact", head: true })
+      .neq("status", "cancelada"),
+    supabase.from("fato_auditoria_itens").select("id", { count: "exact", head: true }),
+    supabase
+      .from("fato_auditorias")
+      .select("dataInicio, dim_fases!fato_auditorias_faseId_fkey(nome), dim_disciplinas!fato_auditorias_disciplinaId_fkey(nome)")
+      .gte("dataInicio", today)
+      .neq("status", "concluida")
+      .neq("status", "cancelada")
+      .order("dataInicio", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+
+  const auditsCount = auditsRes.count ?? 0;
+  const totalItems = itemsRes.count ?? 0;
+  const next = nextRes.data as { dataInicio: string; dim_fases?: { nome: string }; dim_disciplinas?: { nome: string } } | null;
+  return {
+    auditsCount,
+    totalItems,
+    nextAuditDate: next?.dataInicio ?? null,
+    nextAuditSection: next?.dim_disciplinas?.nome ?? next?.dim_fases?.nome ?? null,
+  };
+}
+
+export async function dashboardWorstDisciplines(limit = 5): Promise<WorstDiscipline[]> {
+  const { data, error } = await supabase
+    .from("fato_auditoria_itens")
+    .select("disciplinaId, dim_disciplinas!fato_auditoria_itens_disciplinaId_fkey(nome)")
+    .eq("status", "nao_conforme");
+
+  if (error) throw new Error(error.message);
+
+  const byDiscipline = new Map<string, { name: string; count: number }>();
+  for (const row of data ?? []) {
+    const disc = row.dim_disciplinas as { nome: string } | null;
+    const name = disc?.nome ?? "Sem disciplina";
+    const id = (row.disciplinaId as string) ?? "";
+    if (!byDiscipline.has(id)) byDiscipline.set(id, { name, count: 0 });
+    byDiscipline.get(id)!.count += 1;
+  }
+
+  return Array.from(byDiscipline.values())
+    .map((v) => ({ disciplineName: v.name, errorCount: v.count }))
+    .sort((a, b) => b.errorCount - a.errorCount)
+    .slice(0, limit);
+}
+
+export async function dashboardErrorsByCategory(): Promise<ErrorByCategory[]> {
+  const { data, error } = await supabase
+    .from("fato_auditoria_itens")
+    .select("categoriaId, status, dim_categorias!fato_auditoria_itens_categoriaId_fkey(nome)")
+    .eq("status", "nao_conforme");
+
+  if (error) throw new Error(error.message);
+
+  const byCategory = new Map<string, { name: string; major: number; minor: number }>();
+  for (const row of data ?? []) {
+    const cat = row.dim_categorias as { nome: string } | null;
+    const name = cat?.nome ?? "Sem categoria";
+    const id = (row.categoriaId as string) ?? "";
+    if (!byCategory.has(id)) byCategory.set(id, { name, major: 0, minor: 0 });
+    byCategory.get(id)!.major += 1;
+  }
+
+  return Array.from(byCategory.values())
+    .map((v) => ({ categoryName: v.name, major: v.major, minor: v.minor }))
+    .sort((a, b) => b.major + b.minor - (a.major + a.minor));
+}
+
+// --- Works (dim_obras) ---
 export async function worksList(): Promise<WorkRow[]> {
   const { data, error } = await supabase
     .from("dim_obras")
@@ -486,12 +582,20 @@ export type AuditDetail = {
   endDate?: string | null;
 };
 
+export type EvidenciaAnexo = {
+  id: string;
+  arquivoNome: string;
+  arquivoUrl: string; // path no storage, usar createSignedUrl para exibir/baixar
+  arquivoTipo: string;
+};
+
 export type AuditItemRow = {
   id: string;
   status: string;
   evidenceText?: string | null;
   construflowRef?: string | null;
   nextReviewAt?: string | null;
+  anexos?: EvidenciaAnexo[];
   checklistItem?: { description: string; category?: { name: string; discipline?: { name: string } } };
   customItem?: { description: string; discipline?: { name: string }; category?: { name: string } };
 };
@@ -554,6 +658,8 @@ export function auditsList(params: {
   phaseId?: string;
   status?: string;
   auditorId?: string;
+  dateFrom?: string;
+  dateTo?: string;
 }) {
   let q = supabase
     .from("fato_auditorias")
@@ -569,6 +675,8 @@ export function auditsList(params: {
   if (params.phaseId) q = q.eq("faseId", params.phaseId);
   if (params.status) q = q.eq("status", params.status);
   if (params.auditorId) q = q.eq("auditorResponsavelId", params.auditorId);
+  if (params.dateFrom) q = q.gte("dataInicio", params.dateFrom);
+  if (params.dateTo) q = q.lte("dataInicio", params.dateTo);
   return q.then(({ data, error }) => {
     if (error) throw new Error(error.message);
     return (data ?? []).map((a: Record<string, unknown>) =>
@@ -624,15 +732,35 @@ export async function auditItems(id: string): Promise<AuditItemRow[]> {
     .eq("auditoriaId", id)
     .order("ordemExibicao");
   if (error) throw new Error(error.message);
-  return (data ?? []).map((r: Record<string, unknown>) => {
+  const items = (data ?? []) as Array<Record<string, unknown> & { id: string }>;
+  const itemIds = items.map((i) => i.id);
+  let anexosMap: Record<string, EvidenciaAnexo[]> = {};
+  if (itemIds.length > 0) {
+    const { data: anexosData } = await supabase
+      .from("tbl_evidencias_anexos")
+      .select("id, auditoriaItemId, arquivoNome, arquivoUrl, arquivoTipo")
+      .in("auditoriaItemId", itemIds);
+    if (anexosData) {
+      anexosMap = (anexosData as Array<{ id: string; auditoriaItemId: string; arquivoNome: string; arquivoUrl: string; arquivoTipo: string }>).reduce(
+        (acc, a) => {
+          if (!acc[a.auditoriaItemId]) acc[a.auditoriaItemId] = [];
+          acc[a.auditoriaItemId].push({ id: a.id, arquivoNome: a.arquivoNome, arquivoUrl: a.arquivoUrl, arquivoTipo: a.arquivoTipo });
+          return acc;
+        },
+        {} as Record<string, EvidenciaAnexo[]>
+      );
+    }
+  }
+  return items.map((r) => {
     const tpl = r.tbl_checklist_template as { itemVerificacao: string; dim_categorias?: { nome: string; dim_disciplinas?: { nome: string } } } | null;
     const dbStatus = r.status as string;
     return {
       id: r.id,
       status: STATUS_FROM_DB[dbStatus] ?? dbStatus,
-      evidenceText: r.evidenciaObservacao ?? null,
-      construflowRef: r.codigoConstruflow ?? null,
-      nextReviewAt: r.proximaRevisao ?? null,
+      evidenceText: (r.evidenciaObservacao as string | null) ?? null,
+      construflowRef: (r.codigoConstruflow as string | null) ?? null,
+      nextReviewAt: (r.proximaRevisao as string | null) ?? null,
+      anexos: anexosMap[r.id] ?? [],
       checklistItem: tpl
         ? {
             description: tpl.itemVerificacao,
@@ -644,6 +772,40 @@ export async function auditItems(id: string): Promise<AuditItemRow[]> {
       customItem: undefined,
     };
   });
+}
+
+export type AuditItemCounts = {
+  total: number;
+  conforme: number;
+  naoConforme: number;
+  pendente: number;
+};
+
+/** Retorna contagem de itens por status para múltiplas auditorias (para exibição em listas) */
+export async function auditItemsCountsByAuditIds(
+  auditIds: string[]
+): Promise<Record<string, AuditItemCounts>> {
+  if (auditIds.length === 0) return {};
+  const { data, error } = await supabase
+    .from("fato_auditoria_itens")
+    .select("auditoriaId, status")
+    .in("auditoriaId", auditIds);
+  if (error) throw new Error(error.message);
+  const result: Record<string, AuditItemCounts> = {};
+  for (const id of auditIds) {
+    result[id] = { total: 0, conforme: 0, naoConforme: 0, pendente: 0 };
+  }
+  for (const row of data ?? []) {
+    const id = row.auditoriaId as string;
+    const status = row.status as string;
+    const mapped = STATUS_FROM_DB[status] ?? status;
+    if (!result[id]) result[id] = { total: 0, conforme: 0, naoConforme: 0, pendente: 0 };
+    result[id].total += 1;
+    if (mapped === "CONFORMING") result[id].conforme += 1;
+    else if (mapped === "NONCONFORMING") result[id].naoConforme += 1;
+    else if (mapped === "NOT_STARTED") result[id].pendente += 1;
+  }
+  return result;
 }
 
 /** Itens da auditoria com pontos e disciplina para relatório e score */
@@ -658,7 +820,26 @@ export async function auditItemsForReport(id: string): Promise<AuditReportItemRo
     .eq("auditoriaId", id)
     .order("ordemExibicao");
   if (error) throw new Error(error.message);
-  return (data ?? []).map((r: Record<string, unknown>) => {
+  const items = (data ?? []) as Array<Record<string, unknown> & { id: string }>;
+  const itemIds = items.map((i) => i.id);
+  let anexosMap: Record<string, EvidenciaAnexo[]> = {};
+  if (itemIds.length > 0) {
+    const { data: anexosData } = await supabase
+      .from("tbl_evidencias_anexos")
+      .select("id, auditoriaItemId, arquivoNome, arquivoUrl, arquivoTipo")
+      .in("auditoriaItemId", itemIds);
+    if (anexosData) {
+      anexosMap = (anexosData as Array<{ id: string; auditoriaItemId: string; arquivoNome: string; arquivoUrl: string; arquivoTipo: string }>).reduce(
+        (acc, a) => {
+          if (!acc[a.auditoriaItemId]) acc[a.auditoriaItemId] = [];
+          acc[a.auditoriaItemId].push({ id: a.id, arquivoNome: a.arquivoNome, arquivoUrl: a.arquivoUrl, arquivoTipo: a.arquivoTipo });
+          return acc;
+        },
+        {} as Record<string, EvidenciaAnexo[]>
+      );
+    }
+  }
+  return items.map((r) => {
     const tpl = r.tbl_checklist_template as { itemVerificacao: string; dim_categorias?: { nome: string; dim_disciplinas?: { nome: string } } } | null;
     const dbStatus = r.status as string;
     const disc = r.dim_disciplinas as { nome: string } | null;
@@ -674,6 +855,7 @@ export async function auditItemsForReport(id: string): Promise<AuditReportItemRo
       pontosObtidos: pontosObt,
       disciplineId: (r.disciplinaId as string) ?? undefined,
       disciplineName: disc?.nome ?? undefined,
+      anexos: anexosMap[r.id] ?? [],
       checklistItem: tpl
         ? {
             description: tpl.itemVerificacao,
@@ -824,6 +1006,76 @@ export async function auditUpdateItem(
   return found;
 }
 
+const BUCKET_EVIDENCIAS = "audit-evidencias";
+const MAX_EVIDENCE_SIZE = 10 * 1024 * 1024; // 10MB
+
+/** Upload de imagem de evidência para item não conforme. Retorna o anexo criado. */
+export async function auditUploadEvidence(
+  auditId: string,
+  itemId: string,
+  file: File
+): Promise<EvidenciaAnexo> {
+  const allowed = ["image/jpeg", "image/png", "application/pdf"];
+  if (!allowed.includes(file.type)) {
+    throw new Error("Formato não permitido. Use JPG, PNG ou PDF.");
+  }
+  if (file.size > MAX_EVIDENCE_SIZE) {
+    throw new Error(`Arquivo muito grande. Máximo ${MAX_EVIDENCE_SIZE / 1024 / 1024}MB.`);
+  }
+  const me = await authMe();
+  const ext = file.name.split(".").pop() || "jpg";
+  const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const storagePath = `${itemId}/${filename}`;
+
+  const { error: uploadError } = await supabase.storage.from(BUCKET_EVIDENCIAS).upload(storagePath, file, {
+    contentType: file.type,
+    upsert: false,
+  });
+  if (uploadError) throw new Error(uploadError.message ?? "Erro ao enviar arquivo.");
+
+  const fileUrl = storagePath;
+
+  const { data: row, error: insertError } = await supabase
+    .from("tbl_evidencias_anexos")
+    .insert({
+      auditoriaItemId: itemId,
+      arquivoNome: file.name,
+      arquivoUrl: fileUrl,
+      arquivoTipo: file.type,
+      arquivoTamanhoBytes: file.size,
+      uploadedPorId: me.id,
+    })
+    .select("id, arquivoNome, arquivoUrl, arquivoTipo")
+    .single();
+  if (insertError) {
+    await supabase.storage.from(BUCKET_EVIDENCIAS).remove([storagePath]);
+    throw new Error(insertError.message ?? "Erro ao registrar evidência.");
+  }
+  return {
+    id: row.id,
+    arquivoNome: row.arquivoNome,
+    arquivoUrl: row.arquivoUrl,
+    arquivoTipo: row.arquivoTipo,
+  };
+}
+
+/** Gera URL assinada para visualização/download da evidência (bucket privado). Expira em 1h. */
+export async function auditEvidenceSignedUrl(storagePath: string): Promise<string> {
+  const { data, error } = await supabase.storage.from(BUCKET_EVIDENCIAS).createSignedUrl(storagePath, 3600);
+  if (error) throw new Error(error.message ?? "Erro ao obter URL da evidência.");
+  return data.signedUrl;
+}
+
+/** Exclui um anexo de evidência (remove do banco e do storage). */
+export async function auditDeleteEvidence(anexoId: string, storagePath: string): Promise<void> {
+  const { error: deleteDbError } = await supabase
+    .from("tbl_evidencias_anexos")
+    .delete()
+    .eq("id", anexoId);
+  if (deleteDbError) throw new Error(deleteDbError.message ?? "Erro ao excluir evidência.");
+  await supabase.storage.from(BUCKET_EVIDENCIAS).remove([storagePath]);
+}
+
 // Chamada genérica para compatibilidade com páginas existentes
 export async function api<T>(
   path: string,
@@ -840,6 +1092,8 @@ export async function api<T>(
       phaseId: u.searchParams.get("phaseId") ?? undefined,
       status: u.searchParams.get("status") ?? undefined,
       auditorId: u.searchParams.get("auditorId") ?? undefined,
+      dateFrom: u.searchParams.get("dateFrom") ?? undefined,
+      dateTo: u.searchParams.get("dateTo") ?? undefined,
     }) as Promise<T>;
   }
   if (path === "/library/disciplines") {

@@ -64,6 +64,15 @@ export function AuditoriaDetailPage() {
   const podeConcluir = status === "aguardando_apontamentos" && ncsIncompletos.length === 0;
   const podeCancelar = status === "nao_iniciado" || status === "em_andamento" || status === "aguardando_apontamentos";
 
+  const detailParts = [
+    (audit as AuditDetail).work?.name,
+    (audit as AuditDetail).phase?.name,
+    (audit as AuditDetail).discipline?.name,
+    (audit as AuditDetail).auditPhase?.name,
+  ]
+    .filter(Boolean) as string[];
+  const detailText = [...new Set(detailParts)].join(" • ");
+
   return (
     <Container>
       <div className="mb-6">
@@ -71,9 +80,7 @@ export function AuditoriaDetailPage() {
       </div>
       <div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 shadow-sm">
         <h1 className="text-2xl font-semibold text-[hsl(var(--macro))]">{(audit as AuditDetail).title ?? "Auditoria"}</h1>
-        <p className="text-sm text-[hsl(var(--accent))]/90">
-          {(audit as AuditDetail).work?.name ?? ""} • {(audit as AuditDetail).phase?.name ?? ""} • {(audit as AuditDetail).discipline?.name ?? ""} • {(audit as AuditDetail).auditPhase?.name ?? ""}
-        </p>
+        <p className="text-sm text-[hsl(var(--accent))]/90">{detailText}</p>
         <div className="mt-4 flex flex-wrap items-center gap-4">
           <span className="rounded-full border px-3 py-1 text-xs font-medium">{statusLabel[status] ?? status}</span>
           <span className="text-sm text-[hsl(var(--accent))]/90">{ncCount} NC(s) • {pendentes} pendente(s)</span>

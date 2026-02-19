@@ -22,12 +22,14 @@
     "docker:up": "docker compose -f infra/docker-compose.yml up -d",
     "docker:down": "docker compose -f infra/docker-compose.yml down",
     "docker:migrate": "docker compose -f infra/docker-compose.yml --profile tools run --rm migrate",
-    "import": "node --experimental-strip-types scripts/import-spreadsheet.ts"
+    "import": "node --experimental-strip-types scripts/import-spreadsheet.ts",
+    "setup-storage": "npx tsx scripts/setup-storage-bucket.ts"
   },
   "devDependencies": {
     "@prisma/client": "^7.3.0",
     "@prisma/debug": "^6.19.2",
     "concurrently": "^9.1.2",
+    "pg": "^8.18.0",
     "prettier": "^3.6.2",
     "prisma": "^7.3.0",
     "tsx": "^4.20.6",
