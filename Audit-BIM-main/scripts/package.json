@@ -1,0 +1,24 @@
+{
+  "name": "bim-audit-import",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "import": "tsx import-spreadsheet.ts",
+    "validate": "tsx validate-imported-data.ts",
+    "generate": "prisma generate --schema=../packages/db/prisma/schema.prisma"
+  },
+  "dependencies": {
+    "@bim-audit/db": "*",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.5",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20.10.0",
+    "prisma": "^6.16.1",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}

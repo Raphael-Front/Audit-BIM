@@ -1,0 +1,17 @@
+node_modules
+.next
+dist
+.turbo
+.git
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+*.md
+!packages/db/prisma/migrations
+apps/api/node_modules
+apps/web/node_modules
+packages/db/node_modules
+packages/shared/node_modules
+scripts/node_modules

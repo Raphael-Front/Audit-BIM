@@ -1,0 +1,37 @@
+{
+    "databaseUrl": "DATABASE_URL",
+    "onDuplicate": "skip",
+    "singleSheet": {
+      "enabled": true,
+      "sheetName": "Planilha2",
+      "headerRowIndex": 1,
+      "defaultPhaseName": "Geral",
+      "defaultAuditorEmail": "admin@bim.local",
+      "columns": {
+        "obra": "Obra",
+        "fase": "Fase",
+        "disciplina": "Disciplina",
+        "categoria": "Categoria",
+        "itensVerificacao": "Itens de verificação",
+        "status": "Status",
+        "evidenciaObservacao": "Evidência/Observação",
+        "cf": "CF",
+        "proximaRevisao": "Proxima revisão",
+        "peso": "Peso",
+        "pontos": "Pontos"
+      }
+    },
+    "sheets": {
+      "User": { "sheetName": "Usuários", "columns": { "name": "Nome", "email": "Email", "password": "Senha", "role": "Perfil" } },
+      "Work": { "sheetName": "Obras", "columns": { "name": "Nome", "code": "Código", "active": "Ativo" } },
+      "Phase": { "sheetName": "Fases", "columns": { "workCode": "Obra Código", "name": "Nome", "order": "Ordem", "active": "Ativo" } },
+      "Discipline": { "sheetName": "Disciplinas", "columns": { "name": "Nome", "order": "Ordem", "active": "Ativo" } },
+      "Category": { "sheetName": "Categorias", "columns": { "disciplineName": "Disciplina", "name": "Nome", "order": "Ordem", "active": "Ativo" } },
+      "AuditPhase": { "sheetName": "Fases Auditoria", "columns": { "name": "Nome", "label": "Label", "order": "Ordem", "active": "Ativo" } },
+      "Status": { "sheetName": "Status", "columns": { "name": "Nome", "label": "Label", "order": "Ordem", "active": "Ativo" } },
+      "ChecklistItem": { "sheetName": "Itens Checklist", "columns": { "categoryName": "Categoria", "disciplineName": "Disciplina", "auditPhaseName": "Fase Auditoria", "code": "Código", "description": "Descrição", "weight": "Peso", "maxPoints": "Pontos Máx", "active": "Ativo" } },
+      "Audit": { "sheetName": "Auditorias", "columns": { "workCode": "Obra Código", "phaseName": "Fase Nome", "disciplineName": "Disciplina", "auditPhaseName": "Fase Auditoria", "title": "Título", "startDate": "Data Início", "endDate": "Data Fim", "status": "Status", "auditorEmail": "Auditor Email", "createdByEmail": "Criado Por Email" } },
+      "AuditItem": { "sheetName": "Itens Auditoria", "columns": { "auditTitle": "Auditoria Título", "checklistItemCode": "Item Código", "categoryName": "Categoria", "disciplineName": "Disciplina", "auditPhaseName": "Fase Auditoria", "status": "Status", "evidenceText": "Evidência", "construflowRef": "Construflow Ref" } }
+    }
+  }
+  

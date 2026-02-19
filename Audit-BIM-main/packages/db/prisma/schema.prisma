@@ -1,0 +1,504 @@
+// BIM Audit — Schema dimensional (PostgreSQL)
+// Estrutura nova do zero: dim_*, fato_*, tbl_* (16 tabelas).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/* -----------------------------
+   ENUMS
+------------------------------ */
+
+enum PerfilUsuario {
+  admin_bim
+  auditor_bim
+  leitor
+
+  @@map("perfil_usuario")
+}
+
+enum OrigemTemplate {
+  template_original
+  promovido_de_auditoria
+
+  @@map("origem_template")
+}
+
+enum StatusAuditoria {
+  nao_iniciado
+  em_andamento
+  aguardando_apontamentos
+  concluida
+  cancelada
+  pausada
+
+  @@map("status_auditoria")
+}
+
+enum TipoItemAuditoria {
+  template
+  personalizado
+  promovido
+
+  @@map("tipo_item_auditoria")
+}
+
+enum StatusItemAuditoria {
+  nao_iniciado
+  conforme
+  nao_conforme
+  nao_aplicavel
+  corrigido
+
+  @@map("status_item_auditoria")
+}
+
+enum AcaoHistorico {
+  INSERT
+  UPDATE
+  DELETE
+  STATUS_CHANGE
+  FINALIZAR_VERIFICACAO
+  ADICIONAR_ITEM_PERSONALIZADO
+  CONCLUIR_AUDITORIA
+  CANCELAR_AUDITORIA
+  PAUSAR
+  RETOMAR
+
+  @@map("acao_historico")
+}
+
+enum TipoRelatorio {
+  parcial
+  tecnico_standby
+  final
+
+  @@map("tipo_relatorio")
+}
+
+enum FormatoRelatorio {
+  pdf
+  xlsx
+
+  @@map("formato_relatorio")
+}
+
+/* -----------------------------
+   DIMENSÕES
+------------------------------ */
+
+model DimObra {
+  id        String    @id @default(uuid()) @db.Uuid
+  codigo    String    @unique @db.VarChar(50)
+  nome      String    @db.VarChar(200)
+  endereco  String?   @db.Text
+  ativo     Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  auditorias FatoAuditoria[]
+
+  @@map("dim_obras")
+}
+
+model DimFase {
+  id              String   @id @default(uuid()) @db.Uuid
+  codigo          String   @unique @db.VarChar(20)
+  nome            String   @db.VarChar(100)
+  descricao       String?  @db.Text
+  ordemSequencial Int      @default(0)
+  ativo           Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  auditorias           FatoAuditoria[]
+  aplicabilidadeFases  TblTemplateAplicabilidadeFase[]
+
+  @@map("dim_fases")
+}
+
+model DimDisciplina {
+  id        String   @id @default(uuid()) @db.Uuid
+  codigo    String   @unique @db.VarChar(20)
+  nome      String   @db.VarChar(100)
+  descricao String?  @db.Text
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  categoriasDisciplinas DimCategoriaDisciplina[]
+  templates             TblChecklistTemplate[]
+  auditorias            FatoAuditoria[]
+  auditoriaItens        FatoAuditoriaItem[]
+  itensPersonalizados   TblItemPersonalizadoSalvo[]
+  scoresPorDisciplina   TblScorePorDisciplina[]
+
+  @@map("dim_disciplinas")
+}
+
+model DimCategoria {
+  id            String   @id @default(uuid()) @db.Uuid
+  codigo        String   @db.VarChar(50)
+  nome          String   @db.VarChar(200)
+  descricao     String?  @db.Text
+  ordemExibicao Int      @default(0)
+  ativo         Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  disciplinas         DimCategoriaDisciplina[]
+  templates           TblChecklistTemplate[]
+  auditoriaItens      FatoAuditoriaItem[]
+  itensPersonalizados TblItemPersonalizadoSalvo[]
+  scoresPorCategoria  TblScorePorCategoria[]
+
+  @@map("dim_categorias")
+}
+
+model DimCategoriaDisciplina {
+  categoriaId    String   @db.Uuid
+  disciplinaId  String   @db.Uuid
+  ordemExibicao Int     @default(0)
+  createdAt     DateTime @default(now())
+
+  categoria   DimCategoria   @relation(fields: [categoriaId], references: [id], onDelete: Cascade)
+  disciplina DimDisciplina  @relation(fields: [disciplinaId], references: [id], onDelete: Cascade)
+
+  @@id([categoriaId, disciplinaId])
+  @@index([disciplinaId])
+  @@index([categoriaId])
+  @@map("dim_categorias_disciplinas")
+}
+
+model DimUsuario {
+  id            String    @id @default(uuid()) @db.Uuid
+  email         String    @unique @db.VarChar(255)
+  nomeCompleto  String    @db.VarChar(200)
+  senhaHash     String?   @db.VarChar(255) // Nullable quando auth_user_id preenchido (Supabase Auth)
+  authUserId    String?   @unique @map("auth_user_id") @db.Uuid
+  perfil        PerfilUsuario @default(auditor_bim)
+  ativo         Boolean   @default(true)
+  ultimoAcesso  DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  auditoriasResponsavel   FatoAuditoria[]       @relation("AuditorResponsavel")
+  auditoriasCanceladas    FatoAuditoria[]       @relation("AuditoriaCanceladaPor")
+  itensAvaliados          FatoAuditoriaItem[]   @relation("ItemAvaliadoPor")
+  anexosEnviados          TblEvidenciaAnexo[]
+  itensPersonalizados     TblItemPersonalizadoSalvo[] @relation("ItemCriadoPor")
+  itensAprovados          TblItemPersonalizadoSalvo[] @relation("ItemAprovadoPor")
+  templatesInativados     TblChecklistTemplate[] @relation("TemplateInativadoPor")
+  historico               TblHistoricoAlteracao[]
+  relatoriosGerados       TblRelatorioGerado[]
+
+  @@map("dim_usuarios")
+}
+
+/* -----------------------------
+   BIBLIOTECA DE TEMPLATES
+------------------------------ */
+
+model TblChecklistTemplate {
+  id                String         @id @default(uuid()) @db.Uuid
+  versao            Int            @default(1)
+  disciplinaId      String         @db.Uuid
+  categoriaId       String         @db.Uuid
+  itemVerificacao   String         @db.Text
+  peso              Int            // 1-5
+  pontosMaximo      Decimal        @db.Decimal(5, 2)
+  origem            OrigemTemplate @default(template_original)
+  auditoriaOrigemId String?        @db.Uuid
+  ativo             Boolean        @default(true)
+  ordemExibicao     Int            @default(0)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  inativadoEm       DateTime?
+  inativadoPorId    String?        @db.Uuid
+
+  disciplina       DimDisciplina   @relation(fields: [disciplinaId], references: [id], onDelete: Restrict)
+  categoria        DimCategoria    @relation(fields: [categoriaId], references: [id], onDelete: Restrict)
+  auditoriaOrigem  FatoAuditoria?  @relation(fields: [auditoriaOrigemId], references: [id], onDelete: SetNull)
+  inativadoPor     DimUsuario?     @relation("TemplateInativadoPor", fields: [inativadoPorId], references: [id], onDelete: SetNull)
+  aplicabilidadeFases TblTemplateAplicabilidadeFase[]
+  auditoriaItens   FatoAuditoriaItem[]
+  itensPromovidos  TblItemPersonalizadoSalvo[]
+
+  @@index([disciplinaId])
+  @@index([categoriaId])
+  @@index([ativo])
+  @@map("tbl_checklist_template")
+}
+
+model TblTemplateAplicabilidadeFase {
+  id             String   @id @default(uuid()) @db.Uuid
+  templateItemId String   @db.Uuid
+  faseId         String   @db.Uuid
+  obrigatorio    Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  templateItem TblChecklistTemplate @relation(fields: [templateItemId], references: [id], onDelete: Cascade)
+  fase         DimFase               @relation(fields: [faseId], references: [id], onDelete: Cascade)
+
+  @@unique([templateItemId, faseId])
+  @@index([templateItemId])
+  @@index([faseId])
+  @@map("tbl_template_aplicabilidade_fases")
+}
+
+/* -----------------------------
+   FATOS (Transacionais)
+------------------------------ */
+
+model FatoAuditoria {
+  id                   String          @id @default(uuid()) @db.Uuid
+  codigoAuditoria      String          @unique @db.VarChar(100)
+  obraId               String          @db.Uuid
+  disciplinaId         String          @db.Uuid
+  faseId               String          @db.Uuid
+  revisao              Int             @default(1)
+  titulo               String?
+  auditorResponsavelId String          @db.Uuid
+  status               StatusAuditoria @default(nao_iniciado)
+  dataInicio           DateTime        @db.Date
+  dataFimPrevista      DateTime?       @db.Date
+  dataFinalizacaoReal  DateTime?       @db.Date
+  dataEntradaStandby   DateTime?
+  dataConclusao        DateTime?
+  tempoTotalPausa      String?         // INTERVAL stored as string for Prisma
+  motivoCancelamento   String?         @db.Text
+  canceladoPorId      String?         @db.Uuid
+  canceladoEm         DateTime?
+  observacoesGerais    String?         @db.Text
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+
+  obra               DimObra      @relation(fields: [obraId], references: [id], onDelete: Restrict)
+  disciplina         DimDisciplina @relation(fields: [disciplinaId], references: [id], onDelete: Restrict)
+  fase               DimFase       @relation(fields: [faseId], references: [id], onDelete: Restrict)
+  auditorResponsavel DimUsuario    @relation("AuditorResponsavel", fields: [auditorResponsavelId], references: [id], onDelete: Restrict)
+  canceladoPor       DimUsuario?   @relation("AuditoriaCanceladaPor", fields: [canceladoPorId], references: [id], onDelete: SetNull)
+  itens              FatoAuditoriaItem[]
+  scoresCalculados   TblScoreCalculado?
+  scoresPorDisciplina TblScorePorDisciplina[]
+  scoresPorCategoria TblScorePorCategoria[]
+  relatorios         TblRelatorioGerado[]
+  templatesOriginados TblChecklistTemplate[]
+
+  @@unique([obraId, disciplinaId, faseId, revisao])
+  @@index([obraId])
+  @@index([disciplinaId])
+  @@index([faseId])
+  @@index([status])
+  @@index([auditorResponsavelId])
+  @@index([dataInicio, dataFimPrevista])
+  @@map("fato_auditorias")
+}
+
+model FatoAuditoriaItem {
+  id                     String             @id @default(uuid()) @db.Uuid
+  auditoriaId            String             @db.Uuid
+  templateItemId         String?            @db.Uuid
+  categoriaId            String             @db.Uuid
+  disciplinaId           String             @db.Uuid
+  itemVerificacaoSnapshot String            @db.Text
+  pesoSnapshot           Int
+  pontosMaximoSnapshot   Decimal            @db.Decimal(5, 2)
+  tipoItem               TipoItemAuditoria  @default(template)
+  status                 StatusItemAuditoria @default(nao_iniciado)
+  evidenciaObservacao    String?            @db.Text
+  codigoConstruflow      String?            @db.VarChar(100)
+  proximaRevisao         DateTime?          @db.Date
+  pontosObtidos          Decimal           @default(0) @db.Decimal(5, 2)
+  avaliadoEm             DateTime?
+  avaliadoPorId          String?            @db.Uuid
+  ordemExibicao          Int                @default(0)
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  auditoria    FatoAuditoria        @relation(fields: [auditoriaId], references: [id], onDelete: Cascade)
+  templateItem TblChecklistTemplate? @relation(fields: [templateItemId], references: [id], onDelete: SetNull)
+  categoria    DimCategoria         @relation(fields: [categoriaId], references: [id], onDelete: Restrict)
+  disciplina   DimDisciplina        @relation(fields: [disciplinaId], references: [id], onDelete: Restrict)
+  avaliadoPor  DimUsuario?           @relation("ItemAvaliadoPor", fields: [avaliadoPorId], references: [id], onDelete: SetNull)
+  anexos       TblEvidenciaAnexo[]
+  itensPersonalizados TblItemPersonalizadoSalvo[]
+
+  @@index([auditoriaId])
+  @@index([status])
+  @@index([categoriaId])
+  @@index([proximaRevisao])
+  @@map("fato_auditoria_itens")
+}
+
+/* -----------------------------
+   ANEXOS E ITENS PERSONALIZADOS
+------------------------------ */
+
+model TblEvidenciaAnexo {
+  id                 String   @id @default(uuid()) @db.Uuid
+  auditoriaItemId    String   @db.Uuid
+  arquivoNome        String   @db.VarChar(255)
+  arquivoUrl         String   @db.Text
+  arquivoTipo        String   @db.VarChar(50)
+  arquivoTamanhoBytes BigInt
+  descricao          String?  @db.Text
+  uploadedPorId      String   @db.Uuid
+  uploadedEm         DateTime @default(now())
+  createdAt          DateTime @default(now())
+
+  auditoriaItem FatoAuditoriaItem @relation(fields: [auditoriaItemId], references: [id], onDelete: Cascade)
+  uploadedPor   DimUsuario        @relation(fields: [uploadedPorId], references: [id], onDelete: Restrict)
+
+  @@index([auditoriaItemId])
+  @@map("tbl_evidencias_anexos")
+}
+
+model TblItemPersonalizadoSalvo {
+  id                   String    @id @default(uuid()) @db.Uuid
+  auditoriaItemId      String    @db.Uuid
+  disciplinaId         String    @db.Uuid
+  categoriaId         String    @db.Uuid
+  itemVerificacao     String    @db.Text
+  peso                Int
+  pontosMaximo        Decimal   @db.Decimal(5, 2)
+  criadoPorId         String    @db.Uuid
+  aprovado            Boolean   @default(false)
+  aprovadoPorId       String?   @db.Uuid
+  aprovadoEm          DateTime?
+  promovidoTemplateId String?   @db.Uuid
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  auditoriaItem     FatoAuditoriaItem  @relation(fields: [auditoriaItemId], references: [id], onDelete: Cascade)
+  disciplina       DimDisciplina      @relation(fields: [disciplinaId], references: [id], onDelete: Restrict)
+  categoria        DimCategoria      @relation(fields: [categoriaId], references: [id], onDelete: Restrict)
+  criadoPor        DimUsuario         @relation("ItemCriadoPor", fields: [criadoPorId], references: [id], onDelete: Restrict)
+  aprovadoPor      DimUsuario?        @relation("ItemAprovadoPor", fields: [aprovadoPorId], references: [id], onDelete: SetNull)
+  promovidoTemplate TblChecklistTemplate? @relation(fields: [promovidoTemplateId], references: [id], onDelete: SetNull)
+
+  @@index([auditoriaItemId])
+  @@index([aprovado])
+  @@map("tbl_itens_personalizados_salvos")
+}
+
+/* -----------------------------
+   AUDIT TRAIL (Histórico)
+------------------------------ */
+
+model TblHistoricoAlteracao {
+  id           String        @id @default(uuid()) @db.Uuid
+  tabelaNome   String        @db.VarChar(100)
+  registroId    String        @db.Uuid
+  campoNome    String        @db.VarChar(100)
+  valorAnterior String?      @db.Text
+  valorNovo    String?       @db.Text
+  acao         AcaoHistorico
+  usuarioId    String        @db.Uuid
+  ipAddress    String?       @db.VarChar(45)
+  userAgent    String?       @db.Text
+  timestamp    DateTime      @default(now())
+
+  usuario DimUsuario @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+
+  @@index([tabelaNome, registroId])
+  @@index([usuarioId, timestamp])
+  @@index([timestamp])
+  @@map("tbl_historico_alteracoes")
+}
+
+/* -----------------------------
+   CACHE (Scores materializados)
+------------------------------ */
+
+model TblScoreCalculado {
+  id               String   @id @default(uuid()) @db.Uuid
+  auditoriaId      String   @unique @db.Uuid
+  scoreGeral       Decimal  @db.Decimal(5, 2)
+  totalItens       Int
+  totalAplicavel   Int
+  totalConforme    Int
+  totalNaoConforme Int
+  totalNa          Int
+  pontosObtidos    Decimal  @db.Decimal(10, 2)
+  pontosPossiveis  Decimal  @db.Decimal(10, 2)
+  ultimaAtualizacao DateTime @default(now())
+
+  auditoria FatoAuditoria @relation(fields: [auditoriaId], references: [id], onDelete: Cascade)
+
+  @@index([auditoriaId])
+  @@map("tbl_scores_calculados")
+}
+
+model TblScorePorDisciplina {
+  id               String   @id @default(uuid()) @db.Uuid
+  auditoriaId       String   @db.Uuid
+  disciplinaId      String   @db.Uuid
+  scoreDisciplina   Decimal  @db.Decimal(5, 2)
+  totalItens        Int
+  totalAplicavel    Int
+  totalConforme     Int
+  totalNaoConforme   Int
+  totalNa           Int
+  pontosObtidos     Decimal  @db.Decimal(10, 2)
+  pontosPossiveis   Decimal  @db.Decimal(10, 2)
+  ultimaAtualizacao DateTime @default(now())
+
+  auditoria  FatoAuditoria  @relation(fields: [auditoriaId], references: [id], onDelete: Cascade)
+  disciplina DimDisciplina  @relation(fields: [disciplinaId], references: [id], onDelete: Restrict)
+
+  @@unique([auditoriaId, disciplinaId])
+  @@index([auditoriaId])
+  @@map("tbl_scores_por_disciplina")
+}
+
+model TblScorePorCategoria {
+  id               String   @id @default(uuid()) @db.Uuid
+  auditoriaId       String   @db.Uuid
+  categoriaId       String   @db.Uuid
+  scoreCategoria    Decimal  @db.Decimal(5, 2)
+  totalItens        Int
+  totalAplicavel    Int
+  totalConforme     Int
+  totalNaoConforme   Int
+  totalNa           Int
+  pontosObtidos     Decimal  @db.Decimal(10, 2)
+  pontosPossiveis   Decimal  @db.Decimal(10, 2)
+  ultimaAtualizacao DateTime @default(now())
+
+  auditoria FatoAuditoria @relation(fields: [auditoriaId], references: [id], onDelete: Cascade)
+  categoria DimCategoria   @relation(fields: [categoriaId], references: [id], onDelete: Restrict)
+
+  @@unique([auditoriaId, categoriaId])
+  @@index([auditoriaId])
+  @@map("tbl_scores_por_categoria")
+}
+
+/* -----------------------------
+   RELATÓRIOS (Snapshots)
+------------------------------ */
+
+model TblRelatorioGerado {
+  id          String         @id @default(uuid()) @db.Uuid
+  auditoriaId String         @db.Uuid
+  tipoRelatorio TipoRelatorio
+  formato     FormatoRelatorio
+  arquivoUrl  String?        @db.Text
+  snapshotData Json?
+  geradoPorId String         @db.Uuid
+  geradoEm    DateTime       @default(now())
+  createdAt   DateTime       @default(now())
+
+  auditoria FatoAuditoria @relation(fields: [auditoriaId], references: [id], onDelete: Cascade)
+  geradoPor DimUsuario    @relation(fields: [geradoPorId], references: [id], onDelete: Restrict)
+
+  @@index([auditoriaId])
+  @@index([tipoRelatorio])
+  @@map("tbl_relatorios_gerados")
+}

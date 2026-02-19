@@ -1,0 +1,45 @@
+{
+  "name": "@bim-audit/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "prisma",
+    "prisma/migrations"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts",
+    "generate": "prisma generate",
+    "migrate:dev": "prisma migrate dev",
+    "migrate:deploy": "prisma migrate deploy",
+    "studio": "prisma studio",
+    "seed": "tsx prisma/seed.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "echo \"(lint handled at app level)\""
+  },
+  "dependencies": {
+    "@prisma/client": "^6.16.1",
+    "bcryptjs": "^3.0.2",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@prisma/debug": "^6.16.1",
+    "prisma": "^6.16.1",
+    "tsup": "^8.5.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  },
+  "prisma": {
+    "seed": "npm run seed"
+  }
+}
+

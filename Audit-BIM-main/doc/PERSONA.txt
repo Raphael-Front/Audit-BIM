@@ -1,0 +1,97 @@
+PERSONA: 
+
+Administrador BIM (configura templates, permissões, itens)
+
+Auditor BIM (cria e executa auditorias)
+
+Leitor (consulta e exporta relatórios)
+
+JORNADA DO USUARIO:
+
+Acessa o Sistema, Login e senha
+
+Visualiza o Dashboard e tem a opção de filtrar a obra, filtrando a obra ele poderá visualizar os apontamentos existentes, as metas de acertos dessa obra, os apontamentos concluídos e os apontamentos pendentes. Se não filtrar ele tem uma informação geral de todas as informações de todas as obras.
+
+
+Ao mesmo tempo uma Side Bar com as opções, Dashboard e Auditoria
+
+Ao clicar em Auditoria na side bar, abre a tela mostrando uma lista das auditorias podendo ser filtradas por obra, ao filtrar uma obra aparece a ultima auditoria feita naquela obra, com as disciplinas, com os apontamentos que já foram resolvidos e também os pendentes.
+
+
+
+7. UX / Telas
+
+Tela 1 — Login
+
+acesso interno
+
+Tela 2 - A tela já abre mostrando o Dashboard Geral, mostrando todas as obras que tem apontamento, metas de acertos, piores disciplinas(disciplinas com mais apontamentos pendentes), apontamentos atuais por fase, os apontamentos concluídos e os apontamentos. pendentes. 
+
+filtros: obras, disciplinas.
+
+Side bar ao lado esquerdo com as opções: Dashboard, Auditoria, Relatório 
+
+Clicando em Auditoria: Aparece os cards das obras, ao selecionar uma obra, as disciplinas(nas disciplinas aparece a data planejada para a auditoria da disciplina), quantidade de apontamentos abertos e quantidades de apontamentos não resolvidos e também de itens totais auditados.
+
+
+botão: Nova Auditoria
+
+
+Tela 3 — Criar Auditoria
+
+puxando o histórico de seleção da obra, pulando para as seleções a baixo:
+
+fase, data início, disciplina, auditor(pegando do usuário logado no sistema). Após confirmar:
+
+Variáveis: Caso for uma Nova Auditoria(Que nunca foi feita), Caso a Auditoria já tenha sido feita abre como revisão mostrando o progresso das categorias
+
+(os cards aparecem conforme a revisão que esta sendo auditada no momento -> por exemplo, em PL se audita menos itens que em LO)
+
+
+Nova auditoria
+Abre os cards de Categoria (cards macros)
+ao selecionar um card de categoria, abre os itens a serem validados, podendo inserir a informação se foi concluído ou não, e se possui alguma observação, (campos de observação e adição de imagem so abrem caso selecione como item não conforme)
+
+
+Revisão 
+Diferenças, possui no campo status como resolvido/ sempre conforme ou não conforme (dando ênfase nos cards conforme status)
+ainda assim usuário deve validar que aquele item se mantem corrigido (sistema grava essa informação como "erro posterior")
+
+
+
+gerar itens do checklist
+
+Tela 4 — Execução da Auditoria
+
+lista por disciplina/categoria
+
+item com:
+
+status (botões rápidos)
+
+campo evidência/observação
+
+link/id Construflow
+
+próxima revisão
+
+anexos
+
+Tela 5 — Dashboard Auditoria
+
+score geral
+
+score por disciplina
+
+pendências
+
+revisões próximas
+
+Tela 6 — Biblioteca (Admin)
+
+gerenciar itens do checklist
+
+Tela 7 — Relatório
+
+
+

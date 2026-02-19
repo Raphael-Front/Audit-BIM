@@ -1,0 +1,246 @@
+@import "tailwindcss";
+
+/* Dark mode ativado pela classe .dark no html */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Tema GPL ativado pela classe .gpl no html */
+@custom-variant gpl (&:where(.gpl, .gpl *));
+
+/* Tema roxo – clean e harmônico. Textos "macro" (Dashboard, Obras, etc.) usam --macro. */
+:root {
+  --background: 270 30% 98%;
+  --foreground: 270 25% 14%;
+  --card: 0 0% 100%;
+  --border: 270 25% 91%;
+  --muted: 270 20% 94%;
+  --muted-foreground: 270 15% 48%;
+  --input: 270 20% 91%;
+  --ring: 262 83% 58%;
+  --accent: 262 83% 58%;
+  --accent-foreground: 0 0% 100%;
+  --macro: 262 70% 38%;
+}
+
+/* Tema escuro */
+.dark {
+  --background: 262 25% 10%;
+  --foreground: 270 15% 92%;
+  --card: 262 22% 14%;
+  --border: 262 20% 22%;
+  --muted: 262 18% 18%;
+  --muted-foreground: 270 15% 65%;
+  --input: 262 20% 20%;
+  --ring: 262 83% 58%;
+  --accent: 262 83% 58%;
+  --accent-foreground: 0 0% 100%;
+  --macro: 262 65% 72%;
+}
+
+/* Tema GPL - Paleta de verdes harmoniosos baseada nas cores fornecidas */
+.gpl {
+  --background: 50 20% 88%; /* #eae8d5 - Delícia de Pera (creme claro) */
+  --foreground: 140 18% 24%; /* #33473c - Coral Verde Colonial (verde escuro) */
+  --card: 0 0% 100%; /* Branco puro */
+  --border: 100 12% 68%; /* #a6b4a0 - Coral Jardim Secreto (verde suave) */
+  --muted: 100 12% 78%; /* Versão mais clara do verde suave para backgrounds sutis */
+  --muted-foreground: 100 10% 42%; /* Texto secundário em tom de verde médio */
+  --input: 50 15% 92%; /* Inputs com fundo creme claro harmonizado */
+  --ring: 100 12% 46%; /* #71826b - Sálvia de Verão (verde médio) para focus rings */
+  --accent: 100 12% 46%; /* #71826b - Sálvia de Verão (verde médio) - cor principal */
+  --accent-foreground: 0 0% 100%; /* Texto branco sobre accent para contraste */
+  --macro: 140 18% 24%; /* #33473c - Coral Verde Colonial (verde escuro) para títulos principais */
+}
+
+/* Reset e estilos base */
+@layer base {
+  html {
+    @apply antialiased;
+  }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+}
+
+/* Cubo 3D logo - tela de login: wireframe + brilho suave */
+.cube-wrapper {
+  flex-shrink: 0;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cube-scene {
+  perspective: 800px;
+  -webkit-perspective: 800px;
+  perspective-origin: 50% 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 120px;
+  overflow: visible;
+}
+
+.cube-scene .cube {
+  width: 72px;
+  height: 72px;
+  position: relative;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  animation: cube-spin 12s linear infinite;
+  filter: drop-shadow(0 0 20px rgba(147 51 234 0.4)) drop-shadow(0 0 40px rgba(147 51 234 0.2));
+}
+
+.gpl .cube-scene .cube {
+  filter: drop-shadow(0 0 20px rgba(113 130 107 0.4)) drop-shadow(0 0 40px rgba(113 130 107 0.2));
+}
+
+.cube-scene .cube-face {
+  position: absolute;
+  width: 72px;
+  height: 72px;
+  top: 0;
+  left: 0;
+  border: 2px solid rgb(147 51 234);
+  background: transparent;
+  backface-visibility: visible;
+  -webkit-backface-visibility: visible;
+  box-sizing: border-box;
+  box-shadow: inset 0 0 16px rgba(147 51 234 0.12);
+}
+
+.gpl .cube-scene .cube-face {
+  border-color: rgb(113 130 107);
+  box-shadow: inset 0 0 16px rgba(113 130 107 0.12);
+}
+
+.cube-scene .cube-face-front  { transform: translateZ(36px); }
+.cube-scene .cube-face-back   { transform: rotateY(180deg) translateZ(36px); }
+.cube-scene .cube-face-right  { transform: rotateY(90deg) translateZ(36px); }
+.cube-scene .cube-face-left   { transform: rotateY(-90deg) translateZ(36px); }
+.cube-scene .cube-face-top    { transform: rotateX(90deg) translateZ(36px); }
+.cube-scene .cube-face-bottom { transform: rotateX(-90deg) translateZ(36px); }
+
+@keyframes cube-spin {
+  0%   { transform: rotateY(45deg) rotateX(-35deg); }
+  100% { transform: rotateY(405deg) rotateX(-35deg); }
+}
+
+@keyframes cube-glow {
+  0%, 100% { filter: drop-shadow(0 0 20px rgba(147 51 234 0.4)) drop-shadow(0 0 40px rgba(147 51 234 0.2)); }
+  50%     { filter: drop-shadow(0 0 28px rgba(147 51 234 0.55)) drop-shadow(0 0 50px rgba(147 51 234 0.25)); }
+}
+
+/* Tela de login: fundo split (bege + dark com edifício) + card sobreposto à direita */
+.login-screen {
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Fundo padrão: login2-bg.png (tema light/dark) */
+.login-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("/login2-bg.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: 0;
+}
+
+/* Tema GPL: login-bg.png */
+.gpl .login-screen::before {
+  background-image: url("/login-bg.png");
+}
+
+/* Overlay sutil com cor do tema (baixa opacidade para não esconder o fundo) */
+.login-screen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: hsl(var(--accent) / 0.08);
+  z-index: 1;
+}
+
+/* Layout split: esquerda ~35% (logo no fundo), direita ~65% (imagem) com card centralizado */
+.login-screen-content {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 35% 1fr;
+  min-height: 100vh;
+  padding: 0;
+}
+
+.login-screen-card-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  padding-top: 10vh; /* Desloca o card um pouco para baixo para alinhar com a logo */
+}
+
+/* Card de login – paleta extraída da logo e fundo da logo (login-bg.png) */
+.login-card-gpl {
+  /* Fundo bege da área da logo – #EDE8D9 */
+  --login-card-bg: 43 36% 89%;
+  /* Verde-oliva escuro do cubo e texto "AUDIT BIM" – #4A5B49 */
+  --login-card-foreground: 117 11% 32%;
+  /* Verde sálvia para texto secundário – #85A182 */
+  --login-card-muted: 114 13% 57%;
+  /* Verde sálvia claro para bordas – #9AB690 */
+  --login-card-border: 105 18% 64%;
+  /* Inputs: fundo branco suave, borda no tom da logo */
+  --login-card-input-bg: 43 36% 96%;
+  --login-card-input-border: 105 18% 70%;
+  /* Botão: verde principal do cubo – #5F745B */
+  --login-card-accent: 112 12% 41%;
+  --login-card-ring: 112 12% 41%;
+
+  background: hsl(var(--login-card-bg));
+  border-color: hsl(var(--login-card-border));
+}
+
+.login-card-gpl .login-card-input {
+  background: hsl(var(--login-card-input-bg));
+  border-color: hsl(var(--login-card-input-border));
+  color: hsl(var(--login-card-foreground));
+}
+
+.login-card-gpl .login-card-btn {
+  background: hsl(var(--login-card-accent));
+  color: white;
+}
+
+/* Card de login para tema light/dark (login2-bg.png) – usa variáveis do tema */
+.login-card-theme {
+  --login-card-foreground: var(--foreground);
+  --login-card-muted: var(--muted-foreground);
+  --login-card-border: var(--border);
+  --login-card-input-bg: var(--background);
+  --login-card-input-border: var(--input);
+  --login-card-accent: var(--accent);
+  --login-card-ring: var(--ring);
+
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+}
+
+.login-card-theme .login-card-input {
+  background: hsl(var(--login-card-input-bg));
+  border: 1px solid hsl(var(--login-card-input-border));
+  color: hsl(var(--login-card-foreground));
+}
+
+.login-card-theme .login-card-input::placeholder {
+  color: hsl(var(--login-card-muted) / 0.6);
+}
+
+.login-card-theme .login-card-btn {
+  background: hsl(var(--login-card-accent));
+  color: hsl(var(--accent-foreground));
+}
