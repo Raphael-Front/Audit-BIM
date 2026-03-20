@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GPL Interface · Design System</title>
+<style>
+  /* ─── DESIGN TOKENS (extraídos do Linear Interface) ─── */
+  :root {
+    /* Typography */
+    --font-regular: "Inter Variable", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-monospace: "Berkeley Mono", "SFMono Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+
+    --font-size-micro:   0.6875rem;
+    --font-size-mini:    0.75rem;
+    --font-size-small:   0.8125rem;
+    --font-size-regular: 0.9375rem;
+    --font-size-large:   1.125rem;
+    --font-size-title3:  1.25rem;
+    --font-size-title2:  1.5rem;
+    --font-size-title1:  2.25rem;
+
+    --font-weight-light:    300;
+    --font-weight-normal:   450;
+    --font-weight-medium:   500;
+    --font-weight-semibold: 600;
+    --font-weight-bold:     700;
+
+    /* Colors – Light */
+    --bg-sidebar:           #f5f5f5;
+    --bg-base:              #fcfcfc;
+    --bg-border:            #e0e0e0;
+    --content:              #b0b5c0;
+    --content-highlight:    #23252a;
+    --accent:               #7180ff;
+    --accent-hover:         #5a6aff;
+    --success:              #00aa00;
+    --text-primary:         #08090a;
+    --text-secondary:       #3f3f3f;
+    --text-tertiary:        #585a5c;
+
+    /* Radius */
+    --radius-circle:  50%;
+    --radius-rounded: 9999px;
+    --radius-lg:      8px;
+    --radius-md:      6px;
+    --radius-sm:      4px;
+
+    /* Spacing */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+
+    /* Layout */
+    --sidebar-width: 244px;
+
+    /* Speeds */
+    --speed-quick:   0.1s;
+    --speed-regular: 0.25s;
+    --speed-slow:    0.35s;
+
+    /* Easing */
+    --ease-out-cubic: cubic-bezier(.215, .61, .355, 1);
+    --ease-out-quart: cubic-bezier(.165, .84, .44, 1);
+    --ease-out-expo:  cubic-bezier(.19, 1, .22, 1);
+    --ease-in-out-cubic: cubic-bezier(.645, .045, .355, 1);
+
+    /* Docs page chrome */
+    --doc-bg:        #fafafa;
+    --doc-sidebar-bg:#f0f0f0;
+    --doc-border:    #e4e4e4;
+  }
+
+  /* ─── RESET ─── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ─── BASE ─── */
+  html { font-size: 16px; scroll-behavior: smooth; }
+  body {
+    font-family: var(--font-regular);
+    font-size: var(--font-size-small);
+    font-weight: var(--font-weight-normal);
+    line-height: 1.6;
+    color: var(--content-highlight);
+    background: var(--doc-bg);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ─── LAYOUT ─── */
+  .layout { display: flex; min-height: 100vh; }
+
+  .sidebar {
+    width: var(--sidebar-width);
+    flex-shrink: 0;
+    background: var(--doc-sidebar-bg);
+    border-right: 1px solid var(--doc-border);
+    padding: 24px 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+
+  .sidebar-logo {
+    padding: 0 20px 20px;
+    border-bottom: 1px solid var(--doc-border);
+    margin-bottom: 16px;
+  }
+  .sidebar-logo h1 {
+    font-size: var(--font-size-regular);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: -0.01rem;
+    color: var(--content-highlight);
+  }
+  .sidebar-logo p {
+    font-size: var(--font-size-mini);
+    color: var(--content);
+    margin-top: 2px;
+  }
+
+  .sidebar nav a {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 6px 20px;
+    font-size: var(--font-size-small);
+    font-weight: var(--font-weight-normal);
+    color: var(--text-secondary);
+    text-decoration: none;
+    border-radius: 0;
+    transition: background var(--speed-quick) var(--ease-out-cubic),
+                color var(--speed-quick) var(--ease-out-cubic);
+  }
+  .sidebar nav a:hover { background: rgba(0,0,0,.05); color: var(--content-highlight); }
+  .sidebar nav a.active {
+    background: rgba(113,128,255,.12);
+    color: var(--accent);
+    font-weight: var(--font-weight-medium);
+  }
+  .nav-section {
+    font-size: 0.625rem;
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--content);
+    padding: 16px 20px 6px;
+  }
+
+  .content {
+    flex: 1;
+    min-width: 0;
+    padding: 48px 60px;
+    max-width: 900px;
+  }
+
+  /* ─── SECTIONS ─── */
+  section { margin-bottom: 72px; scroll-margin-top: 24px; }
+  .section-title {
+    font-size: var(--font-size-title3);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: -0.01rem;
+    color: var(--content-highlight);
+    margin-bottom: 8px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--doc-border);
+  }
+  .section-desc {
+    font-size: var(--font-size-small);
+    color: var(--text-tertiary);
+    margin-bottom: 28px;
+    line-height: 1.6;
+  }
+  .subsection-title {
+    font-size: var(--font-size-regular);
+    font-weight: var(--font-weight-medium);
+    color: var(--content-highlight);
+    margin-top: 32px;
+    margin-bottom: 14px;
+  }
+
+  /* ─── TOKEN TABLE ─── */
+  .token-table { width: 100%; border-collapse: collapse; font-size: var(--font-size-small); }
+  .token-table th {
+    text-align: left;
+    font-size: 0.625rem;
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--content);
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--doc-border);
+  }
+  .token-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--doc-border);
+    vertical-align: middle;
+  }
+  .token-table tr:last-child td { border-bottom: none; }
+  .token-table tr:hover td { background: rgba(0,0,0,.02); }
+  .token-name {
+    font-family: var(--font-monospace);
+    font-size: var(--font-size-mini);
+    color: var(--accent);
+  }
+  .token-value {
+    font-family: var(--font-monospace);
+    font-size: var(--font-size-mini);
+    color: var(--text-secondary);
+  }
+
+  /* ─── COLOR PALETTE ─── */
+  .color-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+  }
+  .color-swatch {
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid var(--doc-border);
+  }
+  .color-block {
+    height: 72px;
+    width: 100%;
+  }
+  .color-info {
+    padding: 10px 12px;
+    background: white;
+  }
+  .color-label {
+    font-weight: var(--font-weight-medium);
+    font-size: var(--font-size-mini);
+    color: var(--content-highlight);
+  }
+  .color-hex {
+    font-family: var(--font-monospace);
+    font-size: var(--font-size-micro);
+    color: var(--content);
+    margin-top: 2px;
+  }
+  .color-var {
+    font-family: var(--font-monospace);
+    font-size: 0.625rem;
+    color: var(--accent);
+    margin-top: 2px;
+  }
+
+  /* ─── TYPOGRAPHY DEMO ─── */
+  .type-row {
+    display: flex;
+    align-items: baseline;
+    gap: 24px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--doc-border);
+  }
+  .type-row:last-child { border-bottom: none; }
+  .type-meta {
+    width: 180px;
+    flex-shrink: 0;
+  }
+  .type-meta .token-name { display: block; }
+  .type-meta .token-value { display: block; color: var(--content); margin-top: 2px; }
+  .type-sample { flex: 1; color: var(--content-highlight); }
+
+  /* ─── SPACING ─── */
+  .spacing-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--doc-border);
+  }
+  .spacing-row:last-child { border-bottom: none; }
+  .spacing-bar-wrap { flex: 1; }
+  .spacing-bar {
+    height: 8px;
+    border-radius: 4px;
+    background: var(--accent);
+  }
+  .spacing-info { width: 200px; flex-shrink: 0; }
+
+  /* ─── RADIUS ─── */
+  .radius-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .radius-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .radius-box {
+    width: 64px;
+    height: 64px;
+    background: var(--accent);
+    opacity: 0.8;
+  }
+  .radius-label {
+    font-size: var(--font-size-micro);
+    font-family: var(--font-monospace);
+    color: var(--text-secondary);
+    text-align: center;
+  }
+
+  /* ─── ANIMATION ─── */
+  .easing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+  }
+  .easing-card {
+    border: 1px solid var(--doc-border);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    background: white;
+  }
+  .easing-ball-wrap {
+    height: 32px;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 10px;
+    background: var(--bg-sidebar);
+    border-radius: var(--radius-sm);
+  }
+  .easing-ball {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    position: absolute;
+    top: 50%;
+    left: 8px;
+    transform: translateY(-50%);
+  }
+  .easing-card:hover .easing-ball { left: calc(100% - 24px); }
+  .easing-name { font-size: var(--font-size-mini); font-weight: var(--font-weight-medium); }
+  .easing-value { font-family: var(--font-monospace); font-size: 0.625rem; color: var(--content); margin-top: 4px; }
+
+  /* ─── COMPONENTS ─── */
+  .component-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    padding: 16px;
+    background: white;
+    border: 1px solid var(--doc-border);
+    border-radius: var(--radius-lg);
+    margin-bottom: 12px;
+  }
+
+  /* Button/Pill */
+  .pill {
+    font-size: var(--font-size-small);
+    font-weight: var(--font-weight-medium);
+    font-family: var(--font-regular);
+    background: var(--bg-base);
+    border-radius: var(--radius-rounded);
+    border: 1px solid var(--bg-border);
+    height: 25px;
+    padding: 0 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: background var(--speed-quick) var(--ease-out-cubic),
+                border-color var(--speed-quick);
+    color: var(--content-highlight);
+  }
+  .pill:hover { background: #f0f0f0; border-color: #ccc; }
+  .pill .dot {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .pill-accent { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .pill-accent:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+
+  /* Badge */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: var(--radius-rounded);
+    font-size: var(--font-size-micro);
+    font-weight: var(--font-weight-medium);
+  }
+  .badge-default { background: var(--bg-sidebar); color: var(--content-highlight); }
+  .badge-purple  { background: rgba(113,128,255,.15); color: var(--accent); }
+  .badge-green   { background: rgba(0,170,0,.1); color: #00880a; }
+  .badge-orange  { background: rgba(240,140,0,.1); color: #c07000; }
+
+  /* Code block */
+  .code-block {
+    background: #f4f4f4;
+    border: 1px solid var(--doc-border);
+    border-radius: var(--radius-md);
+    padding: 16px 20px;
+    font-family: var(--font-monospace);
+    font-size: var(--font-size-mini);
+    color: var(--text-secondary);
+    overflow-x: auto;
+    line-height: 1.6;
+  }
+  .code-inline {
+    font-family: var(--font-monospace);
+    background: #f4f4f4;
+    border: 1px solid var(--doc-border);
+    border-radius: 0.2em;
+    padding: 0.15em 0.35em;
+    font-size: 0.875em;
+  }
+
+  /* Input */
+  .input-demo {
+    height: 32px;
+    padding: 0 10px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--bg-border);
+    font-family: var(--font-regular);
+    font-size: var(--font-size-small);
+    background: white;
+    outline: none;
+    transition: border-color var(--speed-quick);
+    color: var(--content-highlight);
+    min-width: 200px;
+  }
+  .input-demo:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(113,128,255,.2); }
+
+  /* Status icon */
+  .status-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .status-item { display: flex; align-items: center; gap: 8px; font-size: var(--font-size-small); }
+
+  /* Issue row */
+  .issue-list { border: 1px solid var(--doc-border); border-radius: var(--radius-lg); overflow: hidden; background: white; }
+  .issue-row {
+    display: grid;
+    grid-template-columns: 16px 40px 16px 1fr auto;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--doc-border);
+    font-size: var(--font-size-small);
+    cursor: pointer;
+    transition: background var(--speed-quick);
+  }
+  .issue-row:last-child { border-bottom: none; }
+  .issue-row:hover { background: var(--bg-sidebar); }
+  .issue-id { font-family: var(--font-monospace); font-size: var(--font-size-mini); color: var(--content); }
+  .issue-title { color: var(--content-highlight); font-weight: var(--font-weight-normal); }
+  .issue-date { font-size: var(--font-size-mini); color: var(--content); white-space: nowrap; }
+
+  /* Sidebar nav item example */
+  .nav-item-demo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-small);
+    cursor: pointer;
+    transition: background var(--speed-quick);
+    color: var(--text-secondary);
+  }
+  .nav-item-demo:hover { background: rgba(0,0,0,.05); color: var(--content-highlight); }
+  .nav-item-demo.active {
+    background: rgba(113,128,255,.12);
+    color: var(--accent);
+    font-weight: var(--font-weight-medium);
+  }
+
+  /* ─── DARK MODE TOGGLE ─── */
+  .theme-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: var(--radius-rounded);
+    border: 1px solid var(--doc-border);
+    background: white;
+    font-size: var(--font-size-mini);
+    font-family: var(--font-regular);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    color: var(--content-highlight);
+    z-index: 100;
+    transition: all var(--speed-quick);
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  }
+  .theme-toggle:hover { box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+
+  /* ─── DARK MODE ─── */
+  body.dark {
+    --doc-bg:        #0c0c0e;
+    --doc-sidebar-bg:#101012;
+    --doc-border:    #23252a;
+    --bg-sidebar:    #090909;
+    --bg-base:       #101012;
+    --bg-border:     #23252a;
+    --content:       #6b6f76;
+    --content-highlight: #ffffff;
+    --text-primary:  #ffffff;
+    --text-secondary:#b0b5c0;
+    --text-tertiary: #6b6f76;
+  }
+  body.dark .color-info { background: #1a1b1e; }
+  body.dark .component-row { background: #16171a; }
+  body.dark .easing-card { background: #16171a; }
+  body.dark .issue-list { background: #16171a; }
+  body.dark .code-block { background: #16171a; color: #a0a8b8; }
+  body.dark .input-demo { background: #16171a; color: #fff; }
+  body.dark .theme-toggle { background: #16171a; }
+
+  /* ─── HERO ─── */
+  .hero {
+    margin-bottom: 56px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--doc-border);
+  }
+  .hero-label {
+    font-size: var(--font-size-micro);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .hero h1 {
+    font-size: var(--font-size-title1);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    color: var(--content-highlight);
+    margin-bottom: 12px;
+  }
+  .hero p {
+    font-size: var(--font-size-regular);
+    color: var(--content);
+    line-height: 1.6;
+    max-width: 520px;
+  }
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" onclick="document.body.classList.toggle('dark'); this.textContent = document.body.classList.contains('dark') ? '☀ Light' : '◑ Dark'">◑ Dark</button>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <h1>GPL Interface</h1>
+      <p>Design System</p>
+    </div>
+    <nav>
+      <div class="nav-section">Fundamentos</div>
+      <a href="#colors" class="active">Cores</a>
+      <a href="#typography">Tipografia</a>
+      <a href="#spacing">Espaçamento</a>
+      <a href="#radius">Border Radius</a>
+      <a href="#animation">Animação</a>
+      <a href="#layout">Layout</a>
+      <div class="nav-section">Componentes</div>
+      <a href="#buttons">Botões & Pills</a>
+      <a href="#badges">Badges</a>
+      <a href="#inputs">Inputs</a>
+      <a href="#nav-items">Nav Items</a>
+      <a href="#issue-list">Issue List</a>
+      <a href="#code">Code</a>
+      <div class="nav-section">Tokens</div>
+      <a href="#tokens-all">Todos os Tokens</a>
+    </nav>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="content">
+
+    <div class="hero">
+      <div class="hero-label">GPL · Gplbimgo</div>
+      <h1>Design System</h1>
+      <p>Tokens, componentes e padrões visuais extraídos da interface Linear do projeto Gplbimgo. Use como referência para manter consistência visual em novos desenvolvimentos.</p>
+    </div>
+
+    <!-- ── COLORS ── -->
+    <section id="colors">
+      <h2 class="section-title">Cores</h2>
+      <p class="section-desc">Paleta completa extraída dos arquivos CSS. As variáveis mudam automaticamente entre light e dark mode.</p>
+
+      <h3 class="subsection-title">Light Mode</h3>
+      <div class="color-grid">
+        <div class="color-swatch">
+          <div class="color-block" style="background:#fcfcfc;border-bottom:1px solid #e4e4e4;"></div>
+          <div class="color-info">
+            <div class="color-label">BG Base</div>
+            <div class="color-hex">#fcfcfc</div>
+            <div class="color-var">--bg-base-color-light</div>
+          </div>
+        </div>
+        <div class="color-swatch">
+          <div class="color-block" style="background:#f5f5f5;border-bottom:1px solid #e4e4e4;"></div>
+          <div class="color-info">
+            <div class="color-label">BG Sidebar</div>
+            <div class="color-hex">#f5f5f5</div>
+            <div class="color-var">--bg-sidebar-light</div>
+          </div>
+        </div>
+        <div class="color-swatch">
+          <div class="color-block" style="background:#e0e0e0;"></div>
+          <div class="color-info">
+            <div class="color-label">Border</div>
+            <div class="color-hex">#e0e0e0</div>
+            <div class="color-var">--bg-border-color-light</div>
+          </div>
+        </div>
+        <div class="color-swatch">
+          <div class="color-block" style="background:#b0b5c0;"></div>
+          <div class="color-info">
+            <div class="color-label">Content</div>
+            <div class="color-hex">#b0b5c0</div>
+            <div class="color-var">--content-color-light</div>
+          </div>
+        </div>
+        <div class="color-swatch">
+          <div class="color-block" style="background:#23252a;"></div>
+          <div class="color-info">
+            <div class="color-label">Content Highlight</div>
+            <div class="color-hex">#23252a</div>
+            <div class="color-var">--content-highlight-color-light</div>
+          </div>
+        </div>
+        <div class="color-swatch">
+          <div class="color-block" style="background:#7180ff;"></div>
+          <div class="color-info">
+            <div class="color-label">Accent / Purple</div>
+            <div class="color-hex">#7180ff</div>
+            <div class="color-var">Selection / Link</div>
+          </div>
+        </div>
+        <div class="color-swatch">
+          <div class="color-block" style="background:#00aa00;"></div>
+          <div class="color-info">
+            <div class="color-label">Success</div>
+            <div class="color-hex">#00aa00</div>
+            <div class="color-var">Status / Icon Color</div>
+          </div>
+        </div>
+        <div class="color-swatch">
+          <div class="color-block" style="background:#08090a;"></div>
+          <div class="color-info">
+            <div class="color-label">Black</div>
+            <div class="color-hex">#08090a</div>
+            <div class="color-var">SVG Fill</div>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="subsection-title">Dark Mode</h3>
+      <div class="color-grid">
+        <div class="color-swatch">
+          <div class="color-block" style="background:#101012;"></div>
+          <div class="color-info" style="background:#1e1e22;">
+            <div class="color-label" style="color:#fff;">BG Base</div>
+            <div class="color-hex" style="color:#888;">#101012</div>
+            <div class="color-var">--bg-base-color-dark</div>
+          </div>
+        </div>
+        <div class="color-swatch">
+          <div class="color-block" style="background:#090909;"></div>
+          <div class="color-info" style="background:#1e1e22;">
+            <div class="color-label" style="color:#fff;">BG Sidebar</div>
+            <div class="color-hex" style="color:#888;">#090909</div>
+            <div class="color-var">--bg-sidebar-dark</div>
+          </div>
+        </div>
+        <div class="color-swatch">
+          <div class="color-block" style="background:#23252a;"></div>
+          <div class="color-info" style="background:#1e1e22;">
+            <div class="color-label" style="color:#fff;">Border Dark</div>
+            <div class="color-hex" style="color:#888;">#23252a</div>
+            <div class="color-var">--bg-border-color-dark</div>
+          </div>
+        </div>
+        <div class="color-swatch">
+          <div class="color-block" style="background:#6b6f76;"></div>
+          <div class="color-info" style="background:#1e1e22;">
+            <div class="color-label" style="color:#fff;">Content Dark</div>
+            <div class="color-hex" style="color:#888;">#6b6f76</div>
+            <div class="color-var">--content-color-dark</div>
+          </div>
+        </div>
+        <div class="color-swatch">
+          <div class="color-block" style="background:#ffffff;border-bottom:1px solid #e4e4e4;"></div>
+          <div class="color-info" style="background:#1e1e22;">
+            <div class="color-label" style="color:#fff;">Highlight Dark</div>
+            <div class="color-hex" style="color:#888;">#ffffff</div>
+            <div class="color-var">--content-highlight-color-dark</div>
+          </div>
+        </div>
+        <div class="color-swatch">
+          <div class="color-block" style="background:#191d20;"></div>
+          <div class="color-info" style="background:#1e1e22;">
+            <div class="color-label" style="color:#fff;">Dark Chrome</div>
+            <div class="color-hex" style="color:#888;">#191d20</div>
+            <div class="color-var">SVG / Logo Fill</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── TYPOGRAPHY ── -->
+    <section id="typography">
+      <h2 class="section-title">Tipografia</h2>
+      <p class="section-desc">Fontes: <strong>Inter Variable</strong> (display/UI) e <strong>Berkeley Mono</strong> (monospace). Font smoothing antialiased com text-rendering: optimizeLegibility.</p>
+
+      <div class="type-row">
+        <div class="type-meta">
+          <span class="token-name">--font-size-title1</span>
+          <span class="token-value">2.25rem · 36px</span>
+        </div>
+        <div class="type-sample" style="font-size:2.25rem;font-weight:700;letter-spacing:-0.03em;line-height:1.1;">Active Issues</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">
+          <span class="token-name">--font-size-title2</span>
+          <span class="token-value">1.5rem · 24px</span>
+        </div>
+        <div class="type-sample" style="font-size:1.5rem;font-weight:600;letter-spacing:-0.02em;line-height:1.2;">Gplbimgo</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">
+          <span class="token-name">--font-size-title3</span>
+          <span class="token-value">1.25rem · 20px</span>
+        </div>
+        <div class="type-sample" style="font-size:1.25rem;font-weight:600;letter-spacing:-0.01rem;">Your teams</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">
+          <span class="token-name">--font-size-large</span>
+          <span class="token-value">1.125rem · 18px</span>
+        </div>
+        <div class="type-sample" style="font-size:1.125rem;font-weight:500;">Workspace settings</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">
+          <span class="token-name">--font-size-regular</span>
+          <span class="token-value">0.9375rem · 15px</span>
+        </div>
+        <div class="type-sample" style="font-size:0.9375rem;font-weight:450;">Get familiar with Linear</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">
+          <span class="token-name">--font-size-small</span>
+          <span class="token-value">0.8125rem · 13px</span>
+        </div>
+        <div class="type-sample" style="font-size:0.8125rem;font-weight:450;">Connect your tools and import your data</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">
+          <span class="token-name">--font-size-mini</span>
+          <span class="token-value">0.75rem · 12px</span>
+        </div>
+        <div class="type-sample" style="font-size:0.75rem;font-weight:450;color:#585a5c;">GPL-1 · Mar 10</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">
+          <span class="token-name">--font-size-micro</span>
+          <span class="token-value">0.6875rem · 11px</span>
+        </div>
+        <div class="type-sample" style="font-size:0.6875rem;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:#b0b5c0;">Section Label</div>
+      </div>
+
+      <h3 class="subsection-title">Pesos</h3>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;align-items:baseline;gap:20px;">
+          <span style="width:200px;font-size:var(--font-size-mini);font-family:var(--font-monospace);color:var(--accent);">300 · light</span>
+          <span style="font-weight:300;font-size:var(--font-size-regular);">Inter Variable Light</span>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:20px;">
+          <span style="width:200px;font-size:var(--font-size-mini);font-family:var(--font-monospace);color:var(--accent);">450 · normal</span>
+          <span style="font-weight:450;font-size:var(--font-size-regular);">Inter Variable Normal</span>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:20px;">
+          <span style="width:200px;font-size:var(--font-size-mini);font-family:var(--font-monospace);color:var(--accent);">500 · medium</span>
+          <span style="font-weight:500;font-size:var(--font-size-regular);">Inter Variable Medium</span>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:20px;">
+          <span style="width:200px;font-size:var(--font-size-mini);font-family:var(--font-monospace);color:var(--accent);">600 · semibold</span>
+          <span style="font-weight:600;font-size:var(--font-size-regular);">Inter Variable SemiBold</span>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:20px;">
+          <span style="width:200px;font-size:var(--font-size-mini);font-family:var(--font-monospace);color:var(--accent);">700 · bold</span>
+          <span style="font-weight:700;font-size:var(--font-size-regular);">Inter Variable Bold</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SPACING ── -->
+    <section id="spacing">
+      <h2 class="section-title">Espaçamento</h2>
+      <p class="section-desc">Escala de spacing baseada em múltiplos de 4px. Aplicada em padding, gap e margin nos componentes.</p>
+
+      <div style="border:1px solid var(--doc-border);border-radius:var(--radius-lg);overflow:hidden;background:white;">
+        <div class="spacing-row" style="padding:12px 16px;">
+          <div class="spacing-info"><span class="token-name">--space-1</span> <span class="token-value">4px</span></div>
+          <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:4px;"></div></div>
+          <span style="font-size:var(--font-size-mini);color:var(--content);">Icon gap, icon pile overlap</span>
+        </div>
+        <div class="spacing-row" style="padding:12px 16px;border-top:1px solid var(--doc-border);">
+          <div class="spacing-info"><span class="token-name">--space-2</span> <span class="token-value">8px</span></div>
+          <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:8px;"></div></div>
+          <span style="font-size:var(--font-size-mini);color:var(--content);">Default gap, pill padding</span>
+        </div>
+        <div class="spacing-row" style="padding:12px 16px;border-top:1px solid var(--doc-border);">
+          <div class="spacing-info"><span class="token-name">--space-3</span> <span class="token-value">12px</span></div>
+          <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:12px;"></div></div>
+          <span style="font-size:var(--font-size-mini);color:var(--content);">Card padding, end-padding grid</span>
+        </div>
+        <div class="spacing-row" style="padding:12px 16px;border-top:1px solid var(--doc-border);">
+          <div class="spacing-info"><span class="token-name">--space-4</span> <span class="token-value">16px</span></div>
+          <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:16px;"></div></div>
+          <span style="font-size:var(--font-size-mini);color:var(--content);">Section padding, editor safe area</span>
+        </div>
+        <div class="spacing-row" style="padding:12px 16px;border-top:1px solid var(--doc-border);">
+          <div class="spacing-info"><span class="token-name">sidebar-width</span> <span class="token-value">244px</span></div>
+          <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:244px;max-width:100%;opacity:.4;"></div></div>
+          <span style="font-size:var(--font-size-mini);color:var(--content);">Largura da sidebar</span>
+        </div>
+      </div>
+
+      <h3 class="subsection-title">Editor Spacing</h3>
+      <table class="token-table" style="background:white;border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--doc-border);">
+        <thead><tr><th>Token</th><th>Valor</th><th>Uso</th></tr></thead>
+        <tbody>
+          <tr><td class="token-name">--editor-block-spacing</td><td class="token-value">1rem</td><td style="color:var(--content);font-size:var(--font-size-mini);">Espaço entre blocos</td></tr>
+          <tr><td class="token-name">--editor-block-spacing-large</td><td class="token-value">1.375rem</td><td style="color:var(--content);font-size:var(--font-size-mini);">Espaço grande entre blocos</td></tr>
+          <tr><td class="token-name">--editor-block-spacing-small</td><td class="token-value">0.375rem</td><td style="color:var(--content);font-size:var(--font-size-mini);">Espaço pequeno entre blocos</td></tr>
+          <tr><td class="token-name">--editor-list-inset</td><td class="token-value">1.5rem</td><td style="color:var(--content);font-size:var(--font-size-mini);">Indentação de listas</td></tr>
+          <tr><td class="token-name">--editor-safe-area</td><td class="token-value">16px</td><td style="color:var(--content);font-size:var(--font-size-mini);">Área segura do editor</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ── RADIUS ── -->
+    <section id="radius">
+      <h2 class="section-title">Border Radius</h2>
+      <p class="section-desc">Sistema de raios de borda com 5 níveis: do circle ao pill-shape (rounded).</p>
+
+      <div class="radius-grid">
+        <div class="radius-card">
+          <div class="radius-box" style="border-radius:0;"></div>
+          <div class="radius-label"><strong>0px</strong><br>Sharp</div>
+        </div>
+        <div class="radius-card">
+          <div class="radius-box" style="border-radius:4px;"></div>
+          <div class="radius-label"><strong>4px</strong><br>--radius-sm<br>control default</div>
+        </div>
+        <div class="radius-card">
+          <div class="radius-box" style="border-radius:6px;"></div>
+          <div class="radius-label"><strong>6px</strong><br>--radius-md<br>editor blocks</div>
+        </div>
+        <div class="radius-card">
+          <div class="radius-box" style="border-radius:8px;"></div>
+          <div class="radius-label"><strong>8px</strong><br>--radius-lg<br>cards / panels</div>
+        </div>
+        <div class="radius-card">
+          <div class="radius-box" style="border-radius:9999px;"></div>
+          <div class="radius-label"><strong>9999px</strong><br>--radius-rounded<br>pills / badges</div>
+        </div>
+        <div class="radius-card">
+          <div class="radius-box" style="border-radius:50%;"></div>
+          <div class="radius-label"><strong>50%</strong><br>--radius-circle<br>avatares / dots</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── ANIMATION ── -->
+    <section id="animation">
+      <h2 class="section-title">Animação & Easing</h2>
+      <p class="section-desc">Durações padronizadas e curvas de Bézier para transições. Passe o mouse nos cards para ver o efeito.</p>
+
+      <h3 class="subsection-title">Durações</h3>
+      <table class="token-table" style="background:white;border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--doc-border);">
+        <thead><tr><th>Token</th><th>Valor</th><th>Uso</th></tr></thead>
+        <tbody>
+          <tr><td class="token-name">--speed-highlightFadeIn</td><td class="token-value">0s</td><td style="color:var(--content);font-size:var(--font-size-mini);">Highlight aparece instantaneamente</td></tr>
+          <tr><td class="token-name">--speed-highlightFadeOut / noxmfb</td><td class="token-value">0.15s</td><td style="color:var(--content);font-size:var(--font-size-mini);">Fade de highlight, opacity, transform</td></tr>
+          <tr><td class="token-name">--speed-quickTransition / 1vldssy</td><td class="token-value">0.1s</td><td style="color:var(--content);font-size:var(--font-size-mini);">Hover states rápidos</td></tr>
+          <tr><td class="token-name">--speed-regularTransition / 11o6u2e</td><td class="token-value">0.25s</td><td style="color:var(--content);font-size:var(--font-size-mini);">Modais, painéis</td></tr>
+          <tr><td class="token-name">--speed-slowTransition / f71h5k</td><td class="token-value">0.35s</td><td style="color:var(--content);font-size:var(--font-size-mini);">Transições de layout</td></tr>
+        </tbody>
+      </table>
+
+      <h3 class="subsection-title">Ease-Out</h3>
+      <div class="easing-grid">
+        <div class="easing-card" style="--easing: cubic-bezier(.25,.46,.45,.94);">
+          <div class="easing-ball-wrap"><div class="easing-ball" style="transition: left .5s cubic-bezier(.25,.46,.45,.94);"></div></div>
+          <div class="easing-name">ease-out-quad</div>
+          <div class="easing-value">(.25, .46, .45, .94)</div>
+        </div>
+        <div class="easing-card">
+          <div class="easing-ball-wrap"><div class="easing-ball" style="transition: left .5s cubic-bezier(.215,.61,.355,1);"></div></div>
+          <div class="easing-name">ease-out-cubic</div>
+          <div class="easing-value">(.215, .61, .355, 1)</div>
+        </div>
+        <div class="easing-card">
+          <div class="easing-ball-wrap"><div class="easing-ball" style="transition: left .5s cubic-bezier(.165,.84,.44,1);"></div></div>
+          <div class="easing-name">ease-out-quart</div>
+          <div class="easing-value">(.165, .84, .44, 1)</div>
+        </div>
+        <div class="easing-card">
+          <div class="easing-ball-wrap"><div class="easing-ball" style="transition: left .5s cubic-bezier(.19,1,.22,1);"></div></div>
+          <div class="easing-name">ease-out-expo</div>
+          <div class="easing-value">(.19, 1, .22, 1)</div>
+        </div>
+      </div>
+
+      <h3 class="subsection-title">Ease-In-Out</h3>
+      <div class="easing-grid">
+        <div class="easing-card">
+          <div class="easing-ball-wrap"><div class="easing-ball" style="transition: left .5s cubic-bezier(.455,.03,.515,.955);"></div></div>
+          <div class="easing-name">ease-in-out-quad</div>
+          <div class="easing-value">(.455, .03, .515, .955)</div>
+        </div>
+        <div class="easing-card">
+          <div class="easing-ball-wrap"><div class="easing-ball" style="transition: left .5s cubic-bezier(.645,.045,.355,1);"></div></div>
+          <div class="easing-name">ease-in-out-cubic</div>
+          <div class="easing-value">(.645, .045, .355, 1)</div>
+        </div>
+        <div class="easing-card">
+          <div class="easing-ball-wrap"><div class="easing-ball" style="transition: left .5s cubic-bezier(1,0,0,1);"></div></div>
+          <div class="easing-name">ease-in-out-expo</div>
+          <div class="easing-value">(1, 0, 0, 1)</div>
+        </div>
+        <div class="easing-card">
+          <div class="easing-ball-wrap"><div class="easing-ball" style="transition: left .5s cubic-bezier(.77,0,.175,1);"></div></div>
+          <div class="easing-name">ease-in-out-quart</div>
+          <div class="easing-value">(.77, 0, .175, 1)</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── LAYOUT ── -->
+    <section id="layout">
+      <h2 class="section-title">Layout</h2>
+      <p class="section-desc">Estrutura de duas colunas com sidebar fixa e área de conteúdo com borda arredondada interna.</p>
+
+      <div style="border:1px solid var(--doc-border);border-radius:var(--radius-lg);overflow:hidden;background:white;padding:20px;">
+        <div style="display:flex;gap:8px;height:180px;border:1px solid var(--doc-border);border-radius:var(--radius-sm);overflow:hidden;">
+          <div style="width:120px;flex-shrink:0;background:#f5f5f5;border-right:1px solid var(--doc-border);display:flex;flex-direction:column;padding:10px 8px;gap:4px;">
+            <div style="height:6px;background:#b0b5c0;border-radius:3px;width:80%;margin-bottom:8px;"></div>
+            <div style="height:20px;border-radius:4px;background:rgba(113,128,255,.15);display:flex;align-items:center;padding:0 6px;gap:4px;">
+              <div style="width:8px;height:8px;border-radius:50%;background:#7180ff;flex-shrink:0;"></div>
+              <div style="height:5px;background:#7180ff;border-radius:3px;width:70%;opacity:.7;"></div>
+            </div>
+            <div style="height:20px;border-radius:4px;display:flex;align-items:center;padding:0 6px;gap:4px;">
+              <div style="width:8px;height:8px;border-radius:50%;background:#b0b5c0;flex-shrink:0;"></div>
+              <div style="height:5px;background:#b0b5c0;border-radius:3px;width:60%;"></div>
+            </div>
+            <div style="height:20px;border-radius:4px;display:flex;align-items:center;padding:0 6px;gap:4px;">
+              <div style="width:8px;height:8px;border-radius:50%;background:#b0b5c0;flex-shrink:0;"></div>
+              <div style="height:5px;background:#b0b5c0;border-radius:3px;width:75%;"></div>
+            </div>
+          </div>
+          <div style="flex:1;background:#fcfcfc;display:flex;flex-direction:column;">
+            <div style="height:36px;border-bottom:1px solid var(--doc-border);display:flex;align-items:center;padding:0 12px;gap:8px;">
+              <div style="height:6px;background:#23252a;border-radius:3px;width:120px;"></div>
+              <div style="flex:1;"></div>
+              <div style="height:20px;border-radius:9999px;border:1px solid #e0e0e0;padding:0 8px;display:flex;align-items:center;gap:4px;">
+                <div style="height:5px;background:#b0b5c0;border-radius:3px;width:40px;"></div>
+              </div>
+            </div>
+            <div style="flex:1;padding:8px 12px;display:flex;flex-direction:column;gap:1px;">
+              <div style="height:28px;border-radius:4px;display:flex;align-items:center;padding:0 4px;gap:8px;font-size:11px;color:#23252a;background:transparent;border-bottom:1px solid #f0f0f0;">
+                <div style="width:14px;height:14px;border-radius:50%;border:1.5px solid #b0b5c0;flex-shrink:0;"></div>
+                <span style="font-size:11px;color:#585a5c;font-family:monospace;">GPL-1</span>
+                <span style="font-size:11px;color:#23252a;">Get familiar with Linear</span>
+                <div style="flex:1;"></div>
+                <span style="font-size:10px;color:#b0b5c0;">Mar 10</span>
+              </div>
+              <div style="height:28px;border-radius:4px;display:flex;align-items:center;padding:0 4px;gap:8px;background:#f5f5f5;border-bottom:1px solid #f0f0f0;">
+                <div style="width:14px;height:14px;border-radius:50%;border:1.5px solid #b0b5c0;flex-shrink:0;"></div>
+                <span style="font-size:11px;color:#585a5c;font-family:monospace;">GPL-2</span>
+                <span style="font-size:11px;color:#23252a;">Set up your teams</span>
+                <div style="flex:1;"></div>
+                <span style="font-size:10px;color:#b0b5c0;">Mar 10</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:24px;font-size:var(--font-size-mini);color:var(--content);">
+          <span>Sidebar: <strong style="color:var(--content-highlight);">244px</strong></span>
+          <span>BG Sidebar: <strong style="color:var(--content-highlight);">#f5f5f5</strong></span>
+          <span>BG Content: <strong style="color:var(--content-highlight);">#fcfcfc</strong></span>
+          <span>Border: <strong style="color:var(--content-highlight);">#e0e0e0</strong></span>
+          <span>App border-radius: <strong style="color:var(--content-highlight);">4px</strong></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── BUTTONS ── -->
+    <section id="buttons">
+      <h2 class="section-title">Botões & Pills</h2>
+      <p class="section-desc">Componente pill: altura 25px, padding 0 8px, border-radius rounded (9999px). Usado para filtros, labels e ações na toolbar.</p>
+
+      <div class="component-row">
+        <button class="pill">Default</button>
+        <button class="pill"><span class="dot" style="background:#7180ff;"></span>Purple Label</button>
+        <button class="pill"><span class="dot" style="background:#00aa00;"></span>Active</button>
+        <button class="pill"><span class="dot" style="background:#f08000;"></span>In Progress</button>
+        <button class="pill"><span class="dot" style="background:#b0b5c0;"></span>Canceled</button>
+        <button class="pill pill-accent">Accent</button>
+      </div>
+
+      <div style="margin-top:16px;">
+        <div class="code-block">/* Pill Component */
+._root {
+  font-size: var(--font-size-small);     /* 13px */
+  font-weight: var(--font-weight-medium); /* 500 */
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-rounded);   /* 9999px */
+  border: 1px solid var(--color-border-secondary);
+  align-items: center;
+  gap: 6px;
+  height: 25px;
+  padding: 0 8px;
+  display: inline-flex;
+}
+
+/* Dot indicator */
+._root:before {
+  content: "";
+  width: var(--label-dot-size, 9px);
+  height: var(--label-dot-size, 9px);
+  background: var(--color);
+  border-radius: var(--radius-circle);  /* 50% */
+  flex-shrink: 0;
+}</div>
+      </div>
+    </section>
+
+    <!-- ── BADGES ── -->
+    <section id="badges">
+      <h2 class="section-title">Badges</h2>
+      <p class="section-desc">Indicadores de estado compactos: altura 20px, border-radius rounded.</p>
+
+      <div class="component-row">
+        <span class="badge badge-default">Default</span>
+        <span class="badge badge-purple">In Progress</span>
+        <span class="badge badge-green">Done</span>
+        <span class="badge badge-orange">Review</span>
+        <span class="badge badge-default" style="background:#ffeaea;color:#cc2222;">Blocked</span>
+      </div>
+    </section>
+
+    <!-- ── INPUTS ── -->
+    <section id="inputs">
+      <h2 class="section-title">Inputs</h2>
+      <p class="section-desc">Campos de entrada com focus ring de 2px usando a cor accent. Clique para ver o estado focado.</p>
+
+      <div class="component-row" style="flex-direction:column;align-items:flex-start;gap:16px;">
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="font-size:var(--font-size-mini);font-weight:var(--font-weight-medium);color:var(--content);">Texto</label>
+          <input class="input-demo" type="text" placeholder="Placeholder...">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="font-size:var(--font-size-mini);font-weight:var(--font-weight-medium);color:var(--content);">Busca</label>
+          <input class="input-demo" type="search" placeholder="Buscar issues...">
+        </div>
+      </div>
+
+      <div style="margin-top:16px;">
+        <div class="code-block">/* Focus Ring */
+:root {
+  --focus-ring-width: 2px;
+}
+:focus-visible {
+  outline: var(--focus-ring-outline);
+  outline-offset: calc(-1 * var(--focus-ring-width));
+  outline-style: solid;
+  outline-color: var(--accent); /* #7180ff */
+}</div>
+      </div>
+    </section>
+
+    <!-- ── NAV ITEMS ── -->
+    <section id="nav-items">
+      <h2 class="section-title">Nav Items</h2>
+      <p class="section-desc">Itens de navegação da sidebar. Estado ativo usa background rgba(113,128,255,0.12) e cor accent.</p>
+
+      <div class="component-row" style="flex-direction:column;align-items:stretch;max-width:240px;gap:2px;">
+        <div class="nav-item-demo active">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+          Active Issues
+        </div>
+        <div class="nav-item-demo">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+          All Issues
+        </div>
+        <div class="nav-item-demo">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2L10 6H14L11 9L12 13L8 10.5L4 13L5 9L2 6H6Z"/></svg>
+          Backlog
+        </div>
+        <div class="nav-item-demo">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="4" width="12" height="1.5" rx=".75"/><rect x="2" y="7.25" width="8" height="1.5" rx=".75"/><rect x="2" y="10.5" width="10" height="1.5" rx=".75"/></svg>
+          Roadmap
+        </div>
+      </div>
+    </section>
+
+    <!-- ── ISSUE LIST ── -->
+    <section id="issue-list">
+      <h2 class="section-title">Issue List</h2>
+      <p class="section-desc">Grid de issues com colunas: checkbox, priority, identifier, status, title, date. Extraído da view "Active issues".</p>
+
+      <div class="issue-list">
+        <div class="issue-row">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <circle cx="7" cy="7" r="6" stroke="#b0b5c0" stroke-width="1.5" stroke-dasharray="3.14 0" stroke-dashoffset="-0.7"/>
+            <circle class="progress" cx="7" cy="7" r="2" fill="none" stroke="#b0b5c0" stroke-width="4" stroke-dasharray="12.19 24.38" stroke-dashoffset="12.19" transform="rotate(-90 7 7)"/>
+          </svg>
+          <span class="issue-id">GPL-1</span>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" fill="none" stroke="#b0b5c0" stroke-width="1.5"/></svg>
+          <span class="issue-title">Get familiar with Linear</span>
+          <span class="issue-date">Mar 10</span>
+        </div>
+        <div class="issue-row">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <circle cx="7" cy="7" r="6" stroke="#b0b5c0" stroke-width="1.5" stroke-dasharray="3.14 0" stroke-dashoffset="-0.7"/>
+          </svg>
+          <span class="issue-id">GPL-2</span>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" fill="none" stroke="#b0b5c0" stroke-width="1.5"/></svg>
+          <span class="issue-title">Set up your teams</span>
+          <span class="issue-date">Mar 10</span>
+        </div>
+        <div class="issue-row">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <circle cx="7" cy="7" r="6" stroke="#b0b5c0" stroke-width="1.5" stroke-dasharray="3.14 0" stroke-dashoffset="-0.7"/>
+          </svg>
+          <span class="issue-id">GPL-3</span>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" fill="none" stroke="#b0b5c0" stroke-width="1.5"/></svg>
+          <span class="issue-title">Connect your tools</span>
+          <span class="issue-date">Mar 10</span>
+        </div>
+        <div class="issue-row">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <circle cx="7" cy="7" r="6" stroke="#b0b5c0" stroke-width="1.5" stroke-dasharray="3.14 0" stroke-dashoffset="-0.7"/>
+          </svg>
+          <span class="issue-id">GPL-4</span>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" fill="none" stroke="#b0b5c0" stroke-width="1.5"/></svg>
+          <span class="issue-title">Import your data</span>
+          <span class="issue-date">Mar 10</span>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;">
+        <div class="code-block">/* Issue List Grid */
+grid-template-columns:
+  [checkbox]   26px
+  [priority]   16px
+  [identifier] minmax(40px, auto)
+  [status]     16px
+  [title]      1fr
+  [createdAt]  minmax(38px, auto)
+  [end-padding] 12px;</div>
+      </div>
+    </section>
+
+    <!-- ── CODE ── -->
+    <section id="code">
+      <h2 class="section-title">Code</h2>
+      <p class="section-desc">Tipografia monospace com Berkeley Mono. Inline code com background quaternary e border-radius 0.2em.</p>
+
+      <div class="component-row" style="flex-direction:column;align-items:flex-start;gap:12px;">
+        <p style="font-size:var(--font-size-regular);line-height:1.7;">
+          Use <span class="code-inline">--font-size-small</span> para texto de UI e <span class="code-inline">--font-weight-medium</span> para labels.
+        </p>
+        <div class="code-block">/* Berkeley Mono Variable */
+@font-face {
+  font-family: Berkeley Mono;
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url(...) format("woff2");
+}
+
+/* Inline code */
+code:not(pre code) {
+  background-color: var(--color-bg-quaternary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: .2em;
+  padding: .15em .25em;
+  font-size: .875em;
+}</div>
+      </div>
+    </section>
+
+    <!-- ── ALL TOKENS ── -->
+    <section id="tokens-all">
+      <h2 class="section-title">Todos os Tokens CSS</h2>
+      <p class="section-desc">Referência completa dos design tokens definidos em <code class="code-inline">:root</code>.</p>
+
+      <table class="token-table" style="background:white;border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--doc-border);">
+        <thead><tr><th>Token</th><th>Valor</th><th>Categoria</th></tr></thead>
+        <tbody>
+          <tr><td class="token-name">--font-regular</td><td class="token-value">"Inter Variable", system-ui...</td><td style="font-size:var(--font-size-mini);color:var(--content);">Tipografia</td></tr>
+          <tr><td class="token-name">--font-monospace</td><td class="token-value">"Berkeley Mono", monospace...</td><td style="font-size:var(--font-size-mini);color:var(--content);">Tipografia</td></tr>
+          <tr><td class="token-name">--font-size-micro</td><td class="token-value">0.6875rem (11px)</td><td style="font-size:var(--font-size-mini);color:var(--content);">Tipografia</td></tr>
+          <tr><td class="token-name">--font-size-mini</td><td class="token-value">0.75rem (12px)</td><td style="font-size:var(--font-size-mini);color:var(--content);">Tipografia</td></tr>
+          <tr><td class="token-name">--font-size-small</td><td class="token-value">0.8125rem (13px)</td><td style="font-size:var(--font-size-mini);color:var(--content);">Tipografia</td></tr>
+          <tr><td class="token-name">--font-size-regular</td><td class="token-value">0.9375rem (15px)</td><td style="font-size:var(--font-size-mini);color:var(--content);">Tipografia</td></tr>
+          <tr><td class="token-name">--font-size-large</td><td class="token-value">1.125rem (18px)</td><td style="font-size:var(--font-size-mini);color:var(--content);">Tipografia</td></tr>
+          <tr><td class="token-name">--font-size-title3</td><td class="token-value">1.25rem (20px)</td><td style="font-size:var(--font-size-mini);color:var(--content);">Tipografia</td></tr>
+          <tr><td class="token-name">--font-size-title2</td><td class="token-value">1.5rem (24px)</td><td style="font-size:var(--font-size-mini);color:var(--content);">Tipografia</td></tr>
+          <tr><td class="token-name">--font-size-title1</td><td class="token-value">2.25rem (36px)</td><td style="font-size:var(--font-size-mini);color:var(--content);">Tipografia</td></tr>
+          <tr><td class="token-name">--font-weight-light</td><td class="token-value">300</td><td style="font-size:var(--font-size-mini);color:var(--content);">Tipografia</td></tr>
+          <tr><td class="token-name">--font-weight-normal</td><td class="token-value">450</td><td style="font-size:var(--font-size-mini);color:var(--content);">Tipografia</td></tr>
+          <tr><td class="token-name">--font-weight-medium</td><td class="token-value">500</td><td style="font-size:var(--font-size-mini);color:var(--content);">Tipografia</td></tr>
+          <tr><td class="token-name">--font-weight-semibold</td><td class="token-value">600</td><td style="font-size:var(--font-size-mini);color:var(--content);">Tipografia</td></tr>
+          <tr><td class="token-name">--font-weight-bold</td><td class="token-value">700</td><td style="font-size:var(--font-size-mini);color:var(--content);">Tipografia</td></tr>
+          <tr><td class="token-name">--bg-sidebar-light</td><td class="token-value">#f5f5f5</td><td style="font-size:var(--font-size-mini);color:var(--content);">Cores</td></tr>
+          <tr><td class="token-name">--bg-base-color-light</td><td class="token-value">#fcfcfc</td><td style="font-size:var(--font-size-mini);color:var(--content);">Cores</td></tr>
+          <tr><td class="token-name">--bg-border-color-light</td><td class="token-value">#e0e0e0</td><td style="font-size:var(--font-size-mini);color:var(--content);">Cores</td></tr>
+          <tr><td class="token-name">--content-color-light</td><td class="token-value">#b0b5c0</td><td style="font-size:var(--font-size-mini);color:var(--content);">Cores</td></tr>
+          <tr><td class="token-name">--content-highlight-color-light</td><td class="token-value">#23252a</td><td style="font-size:var(--font-size-mini);color:var(--content);">Cores</td></tr>
+          <tr><td class="token-name">--bg-sidebar-dark</td><td class="token-value">#090909</td><td style="font-size:var(--font-size-mini);color:var(--content);">Cores (dark)</td></tr>
+          <tr><td class="token-name">--bg-base-color-dark</td><td class="token-value">#101012</td><td style="font-size:var(--font-size-mini);color:var(--content);">Cores (dark)</td></tr>
+          <tr><td class="token-name">--bg-border-color-dark</td><td class="token-value">#23252a</td><td style="font-size:var(--font-size-mini);color:var(--content);">Cores (dark)</td></tr>
+          <tr><td class="token-name">--content-color-dark</td><td class="token-value">#6b6f76</td><td style="font-size:var(--font-size-mini);color:var(--content);">Cores (dark)</td></tr>
+          <tr><td class="token-name">--content-highlight-color-dark</td><td class="token-value">#ffffff</td><td style="font-size:var(--font-size-mini);color:var(--content);">Cores (dark)</td></tr>
+          <tr><td class="token-name">--radius-circle</td><td class="token-value">50%</td><td style="font-size:var(--font-size-mini);color:var(--content);">Radius</td></tr>
+          <tr><td class="token-name">--radius-rounded</td><td class="token-value">9999px</td><td style="font-size:var(--font-size-mini);color:var(--content);">Radius</td></tr>
+          <tr><td class="token-name">--sidebar-width</td><td class="token-value">244px</td><td style="font-size:var(--font-size-mini);color:var(--content);">Layout</td></tr>
+          <tr><td class="token-name">--control-border-radius</td><td class="token-value">4px</td><td style="font-size:var(--font-size-mini);color:var(--content);">Layout</td></tr>
+          <tr><td class="token-name">--speed-highlightFadeIn</td><td class="token-value">0s</td><td style="font-size:var(--font-size-mini);color:var(--content);">Animação</td></tr>
+          <tr><td class="token-name">--speed-highlightFadeOut</td><td class="token-value">0.15s</td><td style="font-size:var(--font-size-mini);color:var(--content);">Animação</td></tr>
+          <tr><td class="token-name">--speed-quickTransition</td><td class="token-value">0.1s</td><td style="font-size:var(--font-size-mini);color:var(--content);">Animação</td></tr>
+          <tr><td class="token-name">--speed-regularTransition</td><td class="token-value">0.25s</td><td style="font-size:var(--font-size-mini);color:var(--content);">Animação</td></tr>
+          <tr><td class="token-name">--speed-slowTransition</td><td class="token-value">0.35s</td><td style="font-size:var(--font-size-mini);color:var(--content);">Animação</td></tr>
+          <tr><td class="token-name">--ease-out-cubic</td><td class="token-value">cubic-bezier(.215,.61,.355,1)</td><td style="font-size:var(--font-size-mini);color:var(--content);">Easing</td></tr>
+          <tr><td class="token-name">--ease-out-expo</td><td class="token-value">cubic-bezier(.19,1,.22,1)</td><td style="font-size:var(--font-size-mini);color:var(--content);">Easing</td></tr>
+          <tr><td class="token-name">--ease-in-out-cubic</td><td class="token-value">cubic-bezier(.645,.045,.355,1)</td><td style="font-size:var(--font-size-mini);color:var(--content);">Easing</td></tr>
+          <tr><td class="token-name">--editor-block-spacing</td><td class="token-value">1rem</td><td style="font-size:var(--font-size-mini);color:var(--content);">Editor</td></tr>
+          <tr><td class="token-name">--editor-list-inset</td><td class="token-value">1.5rem</td><td style="font-size:var(--font-size-mini);color:var(--content);">Editor</td></tr>
+          <tr><td class="token-name">--editor-safe-area</td><td class="token-value">16px</td><td style="font-size:var(--font-size-mini);color:var(--content);">Editor</td></tr>
+          <tr><td class="token-name">--focus-ring-width</td><td class="token-value">2px</td><td style="font-size:var(--font-size-mini);color:var(--content);">Acessibilidade</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+  </main>
+</div>
+
+<script>
+  // Highlight active nav link on scroll
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('.sidebar nav a');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.sidebar nav a[href="#${entry.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+
+  sections.forEach(s => observer.observe(s));
+
+  // Smooth nav clicks
+  navLinks.forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const id = a.getAttribute('href').slice(1);
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+</script>
+</body>
+</html>

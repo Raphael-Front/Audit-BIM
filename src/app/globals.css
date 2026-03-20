@@ -1,0 +1,324 @@
+@import "tailwindcss";
+
+/* Dark mode ativado pela classe .dark no html */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ─── LIGHT MODE (Design System Linear-inspired) ─── */
+:root {
+  /* Cores principais */
+  --color-primary: #23252a;
+  --color-primary-light: #3f3f3f;
+  --color-accent: #7180ff;
+  --color-accent-soft: rgba(113, 128, 255, 0.12);
+  --color-bg: #f5f5f5;
+  --color-surface: #fcfcfc;
+  --color-border: #e0e0e0;
+  --color-text-primary: #08090a;
+  --color-text-secondary: #3f3f3f;
+  --color-text-muted: #b0b5c0;
+  --color-success: #00aa00;
+  --color-success-bg: rgba(0, 170, 0, 0.1);
+  --color-warning: #c07000;
+  --color-warning-bg: rgba(240, 140, 0, 0.1);
+  --color-danger: #cc2222;
+  --color-danger-bg: #ffeaea;
+  --color-info: #0284C7;
+  --color-info-bg: #E0F2FE;
+  --color-pending: #7180ff;
+  --color-pending-bg: rgba(113, 128, 255, 0.15);
+  /* Report (PDF) */
+  --report-header-bg: #0D1B2A;
+  --report-header-text: #FFFFFF;
+  --report-header-muted: #9CA3AF;
+  --report-bg: #FFFFFF;
+  --report-card-bg: #FFFFFF;
+  --report-text-primary: #1A1A1A;
+  --report-text-secondary: #4B5563;
+  --report-border: #E5E7EB;
+  --report-alt-row-bg: #F4F6F9;
+  --report-score-green: #00aa00;
+  --report-score-yellow: #D97706;
+  --report-score-red: #cc2222;
+  --report-badge-nc-bg: #FEE2E2;
+  --report-badge-nc-text: #DC2626;
+  --report-progress-bg: #E5E7EB;
+  /* HSL vars (usados por componentes shadcn-like) */
+  --background: 0 0% 99%;
+  --foreground: 220 20% 12%;
+  --card: 0 0% 99%;
+  --border: 0 0% 88%;
+  --muted: 0 0% 96%;
+  --muted-foreground: 220 10% 40%;
+  --input: 0 0% 93%;
+  --ring: 234 100% 69%;
+  --accent: 234 100% 69%;
+  --accent-foreground: 0 0% 100%;
+  --macro: 220 20% 12%;
+  /* Tipografia */
+  --font-display: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-monospace: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+  --font-size-micro: 0.6875rem;
+  --font-size-mini: 0.75rem;
+  --font-size-small: 0.8125rem;
+  --font-size-regular: 0.9375rem;
+  --font-size-large: 1.125rem;
+  --font-size-title3: 1.25rem;
+  --font-size-title2: 1.5rem;
+  --font-size-title1: 2.25rem;
+  --font-weight-light: 300;
+  --font-weight-normal: 450;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  /* Radius */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-rounded: 9999px;
+  --radius-circle: 50%;
+  /* Layout */
+  --sidebar-width: 244px;
+  /* Animation */
+  --speed-quick: 0.1s;
+  --speed-regular: 0.25s;
+  --speed-slow: 0.35s;
+  --ease-out-cubic: cubic-bezier(0.215, 0.61, 0.355, 1);
+  --ease-out-quart: cubic-bezier(0.165, 0.84, 0.44, 1);
+  --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+  --ease-in-out-cubic: cubic-bezier(0.645, 0.045, 0.355, 1);
+  /* Login card (usado nas telas de auth) */
+  --login-card-muted: 0 0% 45%;
+  --login-card-foreground: 220 20% 12%;
+  --login-card-ring: 234 100% 69%;
+  /* Status badges */
+  --status-nao-iniciado-bg: 215 16% 94%;
+  --status-nao-iniciado-text: 215 20% 35%;
+  --status-agendado-bg: 214 95% 93%;
+  --status-agendado-text: 221 83% 33%;
+  --status-em-andamento-bg: 238 84% 93%;
+  --status-em-andamento-text: 243 75% 40%;
+  --status-aguardando-apontamentos-bg: 38 92% 93%;
+  --status-aguardando-apontamentos-text: 32 95% 32%;
+  --status-concluida-bg: 158 64% 92%;
+  --status-concluida-text: 160 84% 27%;
+  --status-cancelada-bg: 0 93% 95%;
+  --status-cancelada-text: 0 72% 38%;
+  --status-pausada-bg: 48 96% 89%;
+  --status-pausada-text: 38 92% 35%;
+}
+
+/* ─── DARK MODE ─── */
+.dark {
+  --color-primary: #ffffff;
+  --color-primary-light: #b0b5c0;
+  --color-accent: #7180ff;
+  --color-accent-soft: rgba(113, 128, 255, 0.2);
+  --color-bg: #090909;
+  --color-surface: #101012;
+  --color-border: #23252a;
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #b0b5c0;
+  --color-text-muted: #6b6f76;
+  --color-success: #00aa00;
+  --color-success-bg: rgba(0, 170, 0, 0.15);
+  --color-warning: #f08000;
+  --color-warning-bg: rgba(240, 140, 0, 0.15);
+  --color-danger: #ff4444;
+  --color-danger-bg: rgba(255, 68, 68, 0.15);
+  --color-info: #38bdf8;
+  --color-info-bg: rgba(56, 189, 248, 0.15);
+  --color-pending: #7180ff;
+  --color-pending-bg: rgba(113, 128, 255, 0.2);
+  --report-header-bg: #0D1B2A;
+  --report-header-text: #FFFFFF;
+  --report-header-muted: #9CA3AF;
+  --report-bg: #101012;
+  --report-card-bg: #16171a;
+  --report-text-primary: #ffffff;
+  --report-text-secondary: #b0b5c0;
+  --report-border: #23252a;
+  --report-alt-row-bg: #16171a;
+  --report-progress-bg: #23252a;
+  --background: 0 0% 4%;
+  --foreground: 0 0% 100%;
+  --card: 0 0% 6%;
+  --border: 0 0% 14%;
+  --muted: 0 0% 9%;
+  --muted-foreground: 0 0% 45%;
+  --input: 0 0% 9%;
+  --ring: 234 100% 69%;
+  --accent: 234 100% 69%;
+  --accent-foreground: 0 0% 100%;
+  --macro: 0 0% 100%;
+  --login-card-muted: 0 0% 55%;
+  --login-card-foreground: 0 0% 100%;
+  --login-card-ring: 234 100% 69%;
+}
+
+@layer base {
+  html {
+    @apply antialiased;
+    overflow-x: hidden;
+    font-size: 16px;
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    background-color: var(--color-surface);
+    color: var(--color-text-primary);
+    overflow-x: hidden;
+    min-width: 0;
+    font-size: var(--font-size-small);
+    font-weight: var(--font-weight-normal);
+    line-height: 1.6;
+  }
+  h1,
+  .font-display {
+    font-family: var(--font-display);
+  }
+}
+
+.rdp-root {
+  --rdp-accent-color: var(--color-accent);
+  --rdp-accent-background-color: var(--color-accent-soft);
+  --rdp-range_middle-background-color: var(--color-accent-soft);
+  --rdp-range_start-date-background-color: var(--color-accent);
+  --rdp-range_end-date-background-color: var(--color-accent);
+}
+.rdp-root .rdp-months {
+  flex-wrap: nowrap;
+}
+
+.cube-wrapper {
+  flex-shrink: 0;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cube-scene {
+  perspective: 800px;
+  perspective-origin: 50% 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 120px;
+  overflow: visible;
+}
+
+.cube-scene .cube {
+  width: 72px;
+  height: 72px;
+  position: relative;
+  transform-style: preserve-3d;
+  animation: cube-spin 12s linear infinite;
+  filter: drop-shadow(0 0 20px rgba(113, 128, 255, 0.4));
+}
+
+.cube-scene .cube-face {
+  position: absolute;
+  width: 72px;
+  height: 72px;
+  top: 0;
+  left: 0;
+  border: 2px solid var(--color-accent);
+  background: transparent;
+  backface-visibility: visible;
+  box-sizing: border-box;
+}
+
+.cube-scene .cube-face-front { transform: translateZ(36px); }
+.cube-scene .cube-face-back { transform: rotateY(180deg) translateZ(36px); }
+.cube-scene .cube-face-right { transform: rotateY(90deg) translateZ(36px); }
+.cube-scene .cube-face-left { transform: rotateY(-90deg) translateZ(36px); }
+.cube-scene .cube-face-top { transform: rotateX(90deg) translateZ(36px); }
+.cube-scene .cube-face-bottom { transform: rotateX(-90deg) translateZ(36px); }
+
+@keyframes cube-spin {
+  0% { transform: rotateY(45deg) rotateX(-35deg); }
+  100% { transform: rotateY(405deg) rotateX(-35deg); }
+}
+
+.login-screen {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.login-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("/login2-bg.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: 0;
+}
+
+.login-screen-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  min-height: 100vh;
+  overflow-y: auto;
+}
+
+.login-screen-card-wrapper {
+  width: 100%;
+  max-width: calc(100% - 2rem);
+  margin: 2rem auto;
+  padding: 1rem 1.75rem 2rem;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--color-border);
+}
+
+@media (min-width: 1024px) {
+  .login-screen-card-wrapper {
+    width: 589px;
+    min-height: 638px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+}
+
+.login-card-theme {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.login-card-theme .login-card-logo img {
+  mix-blend-mode: multiply;
+}
+
+.login-card-theme .login-card-input {
+  background: transparent !important;
+  min-height: 40px;
+  padding: 0.5rem 0.75rem;
+  font-size: var(--font-size-regular);
+}
+
+.badge-status-concluida { background-color: var(--color-success-bg); color: var(--color-success); }
+.badge-status-aguardando-apontamentos { background-color: var(--color-pending-bg); color: var(--color-pending); }
+.badge-status-cancelada { background-color: var(--color-bg); color: var(--color-text-muted); }
+.badge-status-nao-iniciado { background-color: hsl(var(--status-nao-iniciado-bg)); color: hsl(var(--status-nao-iniciado-text)); }
+.badge-status-agendado { background-color: hsl(var(--status-agendado-bg)); color: hsl(var(--status-agendado-text)); }
+.badge-status-em-andamento { background-color: hsl(var(--status-em-andamento-bg)); color: hsl(var(--status-em-andamento-text)); }
+.badge-status-pausada { background-color: hsl(var(--status-pausada-bg)); color: hsl(var(--status-pausada-text)); }
+.badge-status-em-atraso { background-color: var(--color-danger-bg); color: var(--color-danger); }

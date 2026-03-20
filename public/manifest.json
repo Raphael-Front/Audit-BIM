@@ -1,0 +1,11 @@
+{
+  "name": "BIM Audit",
+  "short_name": "BIM Audit",
+  "description": "Sistema Web de Auditoria BIM",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0a0a0a",
+  "orientation": "portrait-primary",
+  "icons": []
+}
