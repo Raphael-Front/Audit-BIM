@@ -404,9 +404,9 @@ function DashboardPage() {
                 Obras ordenadas pela maior média de score (mín. 10 auditorias)
               </p>
             </div>
-            <div className="flex-1 min-h-0">
+            <div className="min-h-[250px]">
               {pioresObrasData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height={250}>
                   <BarChart data={pioresObrasData} layout="vertical" margin={{ top: 5, right: 70, bottom: 5, left: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke={barColors.light} opacity={0.3} />
                     <XAxis type="number" domain={[0, 100]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />

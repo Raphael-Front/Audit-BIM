@@ -49,7 +49,7 @@ export default function LoginPage() {
       if (accessToken) {
         setToken(accessToken);
         queryClient.removeQueries({ queryKey: ["me"] });
-        router.replace("/dashboard");
+        // A navegação acontece via useEffect quando o AuthContext confirmar status="authenticated"
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Credenciais inválidas";

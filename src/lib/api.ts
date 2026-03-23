@@ -232,15 +232,18 @@ export async function login(email: string, password: string): Promise<LoginRespo
       role: "leitor",
     };
   }
-  logActivityAsync({
-    userId: u.id,
-    userName: u.name,
-    userEmail: u.email,
-    userRole: u.role,
-    action: "LOGIN",
-    entity: "USUARIO",
-    details: `Login realizado: ${u.email}`,
-  });
+  // Postergar o log para garantir que a sessão esteja totalmente propagada (evita erro RLS)
+  setTimeout(() => {
+    logActivityAsync({
+      userId: u.id,
+      userName: u.name,
+      userEmail: u.email,
+      userRole: u.role,
+      action: "LOGIN",
+      entity: "USUARIO",
+      details: `Login realizado: ${u.email}`,
+    });
+  }, 500);
   return {
     accessToken: data.session?.access_token ?? "",
     user: u,
