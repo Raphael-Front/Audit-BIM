@@ -263,12 +263,19 @@ export async function logout() {
 
 /** Solicita recuperação de senha via email. redirectTo usa VITE_APP_URL em produção para o link abrir na sua app. */
 export async function forgotPassword(email: string): Promise<void> {
-  const baseUrl = getAppBaseUrl() || (typeof window !== "undefined" ? window.location.origin : "");
-  const redirectTo = `${baseUrl}/reset-password`;
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo,
-  });
-  if (error) throw new Error(error.message ?? "Erro ao enviar email de recuperação");
+  try {
+    const baseUrl = getAppBaseUrl() || (typeof window !== "undefined" ? window.location.origin : "");
+    const redirectTo = `${baseUrl}/reset-password`;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo,
+    });
+    if (error) throw new Error(error.message ?? "Erro ao enviar email de recuperação");
+  } catch (err) {
+    if (err instanceof Error) throw err;
+    throw new Error(
+      "Não foi possível conectar ao servidor. Verifique se o projeto Supabase está ativo e tente novamente."
+    );
+  }
 }
 
 /** Redefine a senha usando o token do link de recuperação */
@@ -1310,6 +1317,33 @@ export async function auditGet(id: string): Promise<AuditDetail> {
     startDate: data.dataInicio,
     endDate: data.dataConclusao ?? data.dataFimPrevista ?? null,
   };
+}
+
+/** Atualiza a data planejada (dataInicio) da auditoria */
+export async function auditUpdateSchedule(id: string, startDate: string): Promise<AuditDetail> {
+  const dataInicio = String(startDate).slice(0, 10);
+  const { error } = await supabase
+    .from("fato_auditorias")
+    .update({ dataInicio })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  try {
+    const me = getCachedUser();
+    logActivityAsync({
+      userId: me.id,
+      userName: me.name,
+      userEmail: me.email,
+      userRole: me.role,
+      action: "UPDATE",
+      entity: "AUDITORIA",
+      entityId: id,
+      entityName: "",
+      details: `Data de agendamento alterada para ${dataInicio}`,
+    });
+  } catch {
+    /* ignore */
+  }
+  return auditGet(id);
 }
 
 export async function auditItems(id: string): Promise<AuditItemRow[]> {

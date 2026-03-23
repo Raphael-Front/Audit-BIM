@@ -267,6 +267,18 @@
   z-index: 0;
 }
 
+/* Tela de login sempre em tema claro, mesmo com dark mode ativo */
+.dark .login-screen {
+  --color-surface: #fcfcfc;
+  --color-border: #e0e0e0;
+  --color-text-primary: #08090a;
+  --color-text-secondary: #3f3f3f;
+  --color-text-muted: #b0b5c0;
+  --login-card-muted: 0 0% 45%;
+  --login-card-foreground: 220 20% 12%;
+  --login-card-ring: 234 100% 69%;
+}
+
 .login-screen-content {
   position: relative;
   z-index: 2;
@@ -312,6 +324,13 @@
   min-height: 40px;
   padding: 0.5rem 0.75rem;
   font-size: var(--font-size-regular);
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+.login-card-btn {
+  background-color: var(--color-accent) !important;
+  color: white !important;
 }
 
 .badge-status-concluida { background-color: var(--color-success-bg); color: var(--color-success); }

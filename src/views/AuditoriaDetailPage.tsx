@@ -5,13 +5,13 @@ import Link from "next/link";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Container } from "@/components/layout/Container";
-import { auditGet, auditItems, auditFinishVerification, auditComplete, auditCancel, AUDIT_STATUS_BADGE_CLASS, buildNcsIncompletosMessage, type AuditDetail, type AuditItemRow } from "@/lib/api";
+import { auditGet, auditItems, auditFinishVerification, auditComplete, auditCancel, auditUpdateSchedule, formatDateLocal, AUDIT_STATUS_BADGE_CLASS, buildNcsIncompletosMessage, type AuditDetail, type AuditItemRow } from "@/lib/api";
 import { EvidenciaLink } from "@/components/evidencias/EvidenciaLink";
 import { NavArrowIcon } from "@/components/ui/NavArrowIcon";
 import { useConfirm } from "@/contexts/ConfirmContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/lib/toast";
-import { FileCheck, AlertTriangle, XCircle, Play, FileText, ListChecks, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
+import { FileCheck, AlertTriangle, XCircle, Play, FileText, ListChecks, Pencil, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 
 const MSG_SEM_PERMISSAO = "Você não tem permissão para acessar esta página.";
 
@@ -39,6 +39,8 @@ export function AuditoriaDetailPage() {
   const queryClient = useQueryClient();
   const confirm = useConfirm();
   const [currentPage, setCurrentPage] = useState(1);
+  const [showDateEditModal, setShowDateEditModal] = useState(false);
+  const [editDateValue, setEditDateValue] = useState("");
   const isLeitor = me?.role === "leitor";
   const { data: audit, isError, isPending } = useQuery({
     queryKey: ["audit", id],
@@ -68,6 +70,18 @@ export function AuditoriaDetailPage() {
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Erro ao cancelar auditoria.");
+    },
+  });
+  const updateSchedule = useMutation({
+    mutationFn: (newDate: string) => auditUpdateSchedule(id!, newDate),
+    onSuccess: (updatedAudit) => {
+      queryClient.setQueryData(["audit", id], updatedAudit);
+      queryClient.invalidateQueries({ queryKey: ["audit"] });
+      setShowDateEditModal(false);
+      toast.success("Data de agendamento alterada com sucesso.");
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : "Erro ao alterar data.");
     },
   });
 
@@ -198,6 +212,9 @@ export function AuditoriaDetailPage() {
               className={`rounded-[20px] px-2.5 py-0.5 text-[11px] font-semibold ${AUDIT_STATUS_BADGE_CLASS[status] ?? "badge-status-nao-iniciado"}`}
             >
               {statusLabel[status] ?? status}
+            </span>
+            <span className="text-sm text-[hsl(var(--muted-foreground))]">
+              Data planejada: {formatDateLocal((audit as AuditDetail).startDate, { day: "2-digit", month: "2-digit", year: "numeric" })}
             </span>
             <span className="text-sm text-[hsl(var(--muted-foreground))]">
               {ncCount} NC(s) • {pendentes} pendente(s)
@@ -334,6 +351,20 @@ export function AuditoriaDetailPage() {
               </button>
             )
           )}
+          {!isLeitor && status !== "concluida" && status !== "cancelada" && (
+            <button
+              type="button"
+              onClick={() => {
+                const sd = (audit as AuditDetail).startDate ?? "";
+                setEditDateValue(sd.includes("T") ? sd.slice(0, 10) : (sd || new Date().toISOString().slice(0, 10)));
+                setShowDateEditModal(true);
+              }}
+              className="inline-flex items-center gap-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-4 py-2.5 text-sm font-medium text-[hsl(var(--foreground))] transition-colors hover:bg-[hsl(var(--muted))]"
+            >
+              <Calendar className="h-4 w-4" />
+              Alterar data de agendamento
+            </button>
+          )}
         </div>
       </div>
 
@@ -458,6 +489,57 @@ export function AuditoriaDetailPage() {
           );
         })()}
       </section>
+
+      {/* Modal alterar data de agendamento */}
+      {showDateEditModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-date-title"
+        >
+          <div
+            className="mx-4 w-full max-w-md rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="modal-date-title" className="text-lg font-semibold text-[hsl(var(--foreground))]">
+              Alterar data de agendamento
+            </h2>
+            <p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">
+              Escolha a nova data planejada para esta auditoria.
+            </p>
+            <div className="mt-4">
+              <label htmlFor="edit-audit-date" className="block text-sm font-medium text-[hsl(var(--foreground))]">
+                Data planejada
+              </label>
+              <input
+                id="edit-audit-date"
+                type="date"
+                value={editDateValue}
+                onChange={(e) => setEditDateValue(e.target.value)}
+                className="mt-1 w-full rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-3 py-2.5 text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
+              />
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowDateEditModal(false)}
+                className="rounded-lg border border-[hsl(var(--border))] px-4 py-2 text-sm font-medium text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))]"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => editDateValue && updateSchedule.mutate(editDateValue)}
+                disabled={!editDateValue || updateSchedule.isPending}
+                className="rounded-lg bg-[hsl(var(--accent))] px-4 py-2 text-sm font-medium text-[hsl(var(--accent-foreground))] hover:opacity-90 disabled:opacity-50"
+              >
+                {updateSchedule.isPending ? "Salvando..." : "Salvar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Container>
   );
 }

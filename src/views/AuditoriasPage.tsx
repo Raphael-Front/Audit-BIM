@@ -302,7 +302,7 @@ export function AuditoriasPage() {
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-[var(--color-text-primary)] truncate">{getDisplayCode(a)}</p>
                     <p className="text-xs text-[var(--color-text-secondary)]">
-                      Planejada: {formatDateLocal(a.plannedDate ?? a.startDate, { day: "2-digit", month: "2-digit", year: "numeric" }).replace(/\//g, "-")} · Criada: {formatDateLocal(a.createdDate, { day: "2-digit", month: "2-digit", year: "numeric" }).replace(/\//g, "-")}
+                      Planejada: {formatDateLocal(a.plannedDate ?? a.startDate, { day: "2-digit", month: "2-digit", year: "numeric" })} · Criada: {formatDateLocal(a.createdDate, { day: "2-digit", month: "2-digit", year: "numeric" })}
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
@@ -311,7 +311,7 @@ export function AuditoriasPage() {
                     ) : (
                       <span className="text-[hsl(var(--muted-foreground))]">—</span>
                     )}
-                    <span className={`rounded-[20px] px-2.5 py-0.5 text-[11px] font-semibold shrink-0 ${AUDIT_STATUS_BADGE_CLASS[getDisplayStatus(a)] ?? "badge-status-nao-iniciado"}`}>
+                    <span className={`inline-flex shrink-0 rounded-[20px] px-2.5 py-0.5 text-[11px] font-semibold whitespace-nowrap ${AUDIT_STATUS_BADGE_CLASS[getDisplayStatus(a)] ?? "badge-status-nao-iniciado"}`}>
                       {AUDIT_STATUS_LABELS[getDisplayStatus(a)] ?? getDisplayStatus(a)}
                     </span>
                   </div>
@@ -326,17 +326,17 @@ export function AuditoriasPage() {
           ))
         )}
       </div>
-      {/* Desktop: tabela com scroll horizontal se necessário */}
-      <div className="hidden md:block mt-8 overflow-x-auto">
-        <div className="min-w-[700px] space-y-2">
-          <div className="grid items-center gap-4 rounded-2xl border border-transparent px-4 lg:px-6 py-1 [grid-template-columns:1fr_8rem_8rem_3.5rem_4.5rem_4.5rem_4.5rem_5.5rem]">
+      {/* Desktop: tabela responsiva */}
+      <div className="hidden md:block mt-8 w-full min-w-0">
+        <div className="w-full min-w-0 space-y-2">
+          <div className="grid items-center gap-2 rounded-2xl border border-transparent px-4 py-1 lg:gap-4 lg:px-6 [grid-template-columns:minmax(0,2fr)_minmax(6rem,1fr)_minmax(7rem,1fr)_minmax(2.5rem,0.6fr)_minmax(3rem,0.6fr)_minmax(3.5rem,0.6fr)_minmax(3rem,0.6fr)_minmax(5rem,1fr)]">
             <span className="min-w-0 text-xs font-medium uppercase tracking-wider text-[hsl(var(--muted-foreground))]">cod. auditoria</span>
             <button
               type="button"
               role="columnheader"
               aria-sort={sortColumn === "plannedDate" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
               onClick={() => handleSort("plannedDate")}
-              className="group flex cursor-pointer items-center justify-center gap-1 py-1 text-center text-xs font-medium uppercase tracking-wider text-[hsl(var(--muted-foreground))] underline decoration-[hsl(var(--muted-foreground))]/50 transition-opacity duration-150 ease-[ease] hover:decoration-[hsl(var(--foreground))]"
+              className="group flex cursor-pointer items-center justify-center gap-1 py-1 text-center text-xs font-medium uppercase tracking-wider text-[hsl(var(--muted-foreground))] transition-opacity duration-150 ease-[ease] hover:opacity-100"
               style={{ opacity: sortColumn === "plannedDate" ? 1 : 0.7 }}
             >
               Data planejada <SortArrowIcon active={sortColumn === "plannedDate"} direction={sortColumn === "plannedDate" ? sortDirection : null} />
@@ -346,7 +346,7 @@ export function AuditoriasPage() {
               role="columnheader"
               aria-sort={sortColumn === "createdDate" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
               onClick={() => handleSort("createdDate")}
-              className="group flex cursor-pointer items-center justify-center gap-1 py-1 text-center text-xs font-medium uppercase tracking-wider text-[hsl(var(--muted-foreground))] underline decoration-[hsl(var(--muted-foreground))]/50 transition-opacity duration-150 ease-[ease] hover:decoration-[hsl(var(--foreground))]"
+              className="group flex cursor-pointer items-center justify-center gap-1 py-1 text-center text-xs font-medium uppercase tracking-wider text-[hsl(var(--muted-foreground))] transition-opacity duration-150 ease-[ease] hover:opacity-100 whitespace-nowrap"
               style={{ opacity: sortColumn === "createdDate" ? 1 : 0.7 }}
             >
               Data de criação <SortArrowIcon active={sortColumn === "createdDate"} direction={sortColumn === "createdDate" ? sortDirection : null} />
@@ -356,7 +356,7 @@ export function AuditoriasPage() {
               role="columnheader"
               aria-sort={sortColumn === "score" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
               onClick={() => handleSort("score")}
-              className="group flex cursor-pointer items-center justify-end gap-1 py-1 pr-1 text-right text-xs font-medium uppercase tracking-wider text-[hsl(var(--muted-foreground))] underline decoration-[hsl(var(--muted-foreground))]/50 transition-opacity duration-150 ease-[ease] hover:decoration-[hsl(var(--foreground))]"
+              className="group flex cursor-pointer items-center justify-end gap-1 py-1 pr-1 text-right text-xs font-medium uppercase tracking-wider text-[hsl(var(--muted-foreground))] transition-opacity duration-150 ease-[ease] hover:opacity-100"
               style={{ opacity: sortColumn === "score" ? 1 : 0.7 }}
             >
               Score <SortArrowIcon active={sortColumn === "score"} direction={sortColumn === "score" ? sortDirection : null} />
@@ -366,7 +366,7 @@ export function AuditoriasPage() {
               role="columnheader"
               aria-sort={sortColumn === "conformes" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
               onClick={() => handleSort("conformes")}
-              className="group flex cursor-pointer items-center justify-center gap-1 py-1 text-center text-xs font-medium uppercase tracking-wider text-[hsl(var(--muted-foreground))] underline decoration-[hsl(var(--muted-foreground))]/50 transition-opacity duration-150 ease-[ease] hover:decoration-[hsl(var(--foreground))]"
+              className="group flex cursor-pointer items-center justify-center gap-1 py-1 text-center text-xs font-medium uppercase tracking-wider text-[hsl(var(--muted-foreground))] transition-opacity duration-150 ease-[ease] hover:opacity-100"
               style={{ opacity: sortColumn === "conformes" ? 1 : 0.7 }}
             >
               Conforme <SortArrowIcon active={sortColumn === "conformes"} direction={sortColumn === "conformes" ? sortDirection : null} />
@@ -376,7 +376,7 @@ export function AuditoriasPage() {
               role="columnheader"
               aria-sort={sortColumn === "naoConformes" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
               onClick={() => handleSort("naoConformes")}
-              className="group flex cursor-pointer items-center justify-center gap-1 py-1 text-center text-xs font-medium uppercase tracking-wider text-[hsl(var(--muted-foreground))] underline decoration-[hsl(var(--muted-foreground))]/50 transition-opacity duration-150 ease-[ease] hover:decoration-[hsl(var(--foreground))]"
+              className="group flex cursor-pointer items-center justify-center gap-1 py-1 text-center text-xs font-medium uppercase tracking-wider text-[hsl(var(--muted-foreground))] transition-opacity duration-150 ease-[ease] hover:opacity-100 whitespace-nowrap"
               style={{ opacity: sortColumn === "naoConformes" ? 1 : 0.7 }}
             >
               Não conf. <SortArrowIcon active={sortColumn === "naoConformes"} direction={sortColumn === "naoConformes" ? sortDirection : null} />
@@ -386,7 +386,7 @@ export function AuditoriasPage() {
               role="columnheader"
               aria-sort={sortColumn === "pendentes" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
               onClick={() => handleSort("pendentes")}
-              className="group flex cursor-pointer items-center justify-center gap-1 py-1 text-center text-xs font-medium uppercase tracking-wider text-[hsl(var(--muted-foreground))] underline decoration-[hsl(var(--muted-foreground))]/50 transition-opacity duration-150 ease-[ease] hover:decoration-[hsl(var(--foreground))]"
+              className="group flex cursor-pointer items-center justify-center gap-1 py-1 text-center text-xs font-medium uppercase tracking-wider text-[hsl(var(--muted-foreground))] transition-opacity duration-150 ease-[ease] hover:opacity-100"
               style={{ opacity: sortColumn === "pendentes" ? 1 : 0.7 }}
             >
               Pendente <SortArrowIcon active={sortColumn === "pendentes"} direction={sortColumn === "pendentes" ? sortDirection : null} />
@@ -396,7 +396,7 @@ export function AuditoriasPage() {
               role="columnheader"
               aria-sort={sortColumn === "status" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
               onClick={() => handleSort("status")}
-              className="group flex cursor-pointer items-center justify-center gap-1 py-1 text-center text-xs font-medium uppercase tracking-wider text-[hsl(var(--muted-foreground))] underline decoration-[hsl(var(--muted-foreground))]/50 transition-opacity duration-150 ease-[ease] hover:decoration-[hsl(var(--foreground))]"
+              className="group flex cursor-pointer items-center justify-center gap-1 py-1 text-center text-xs font-medium uppercase tracking-wider text-[hsl(var(--muted-foreground))] transition-opacity duration-150 ease-[ease] hover:opacity-100"
               style={{ opacity: sortColumn === "status" ? 1 : 0.7 }}
             >
               Status <SortArrowIcon active={sortColumn === "status"} direction={sortColumn === "status" ? sortDirection : null} />
@@ -411,13 +411,13 @@ export function AuditoriasPage() {
                 <Link
                   key={a.id}
                   href={`/auditorias/${a.id}`}
-                  className="grid items-center gap-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-4 lg:px-6 py-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)] mb-1 hover:border-[var(--color-accent)] transition-all duration-150 [grid-template-columns:1fr_8rem_8rem_3.5rem_4.5rem_4.5rem_4.5rem_5.5rem]"
+                  className="grid min-h-[4rem] items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)] mb-1 hover:border-[var(--color-accent)] transition-all duration-150 lg:gap-4 lg:px-6 [grid-template-columns:minmax(0,2fr)_minmax(6rem,1fr)_minmax(7rem,1fr)_minmax(2.5rem,0.6fr)_minmax(3rem,0.6fr)_minmax(3.5rem,0.6fr)_minmax(3rem,0.6fr)_minmax(5rem,1fr)]"
                 >
                   <div className="min-w-0">
                     <p className="font-medium text-[hsl(var(--foreground))] truncate">{getDisplayCode(a)}</p>
                   </div>
-                  <div className="text-center text-sm tabular-nums text-[hsl(var(--muted-foreground))] whitespace-nowrap">{formatDateLocal(a.plannedDate ?? a.startDate, { day: "2-digit", month: "2-digit", year: "numeric" }).replace(/\//g, "-")}</div>
-                  <div className="text-center text-sm tabular-nums text-[hsl(var(--muted-foreground))] whitespace-nowrap">{formatDateLocal(a.createdDate, { day: "2-digit", month: "2-digit", year: "numeric" }).replace(/\//g, "-")}</div>
+                  <div className="text-center text-sm tabular-nums text-[hsl(var(--muted-foreground))] whitespace-nowrap">{formatDateLocal(a.plannedDate ?? a.startDate, { day: "2-digit", month: "2-digit", year: "numeric" })}</div>
+                  <div className="text-center text-sm tabular-nums text-[hsl(var(--muted-foreground))] whitespace-nowrap">{formatDateLocal(a.createdDate, { day: "2-digit", month: "2-digit", year: "numeric" })}</div>
                   <div className="text-right tabular-nums">
                     {a.score != null ? (
                       <span className={`font-semibold ${getScoreColorClass(Math.min(100, a.score))}`}>{Math.min(100, a.score)}%</span>
@@ -429,7 +429,7 @@ export function AuditoriasPage() {
                   <div className="text-center tabular-nums text-sm text-[var(--color-danger)]">{a.naoConformes ?? 0}</div>
                   <div className="text-center tabular-nums text-sm text-[var(--color-text-muted)]">{a.pendentes ?? 0}</div>
                   <div className="flex justify-center">
-                    <span className={`rounded-[20px] px-2.5 py-0.5 text-[11px] font-semibold ${AUDIT_STATUS_BADGE_CLASS[displayStatus] ?? "badge-status-nao-iniciado"}`}>
+                    <span className={`inline-flex shrink-0 rounded-[20px] px-2.5 py-0.5 text-[11px] font-semibold whitespace-nowrap ${AUDIT_STATUS_BADGE_CLASS[displayStatus] ?? "badge-status-nao-iniciado"}`}>
                       {AUDIT_STATUS_LABELS[displayStatus] ?? displayStatus}
                     </span>
                   </div>

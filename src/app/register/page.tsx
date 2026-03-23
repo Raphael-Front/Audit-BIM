@@ -5,10 +5,8 @@ import Link from "next/link";
 import { register, setToken } from "@/lib/api";
 import { PASSWORD_HINT } from "@/lib/validation";
 import { useState } from "react";
-import { useTheme } from "@/contexts/ThemeContext";
 
 export default function RegisterPage() {
-  const { theme } = useTheme();
   const cardClass = "login-card-theme";
   const [email, setEmail] = useState("");
   const [nomeCompleto, setNomeCompleto] = useState("");
@@ -51,7 +49,7 @@ export default function RegisterPage() {
         <div className="login-screen-card-wrapper">
           <div className={`${cardClass} w-full space-y-4`}>
             <div className="login-card-logo">
-              <img src={theme === "dark" ? "/audit-bim-logo-dark.png" : "/audit-bim-logo-light.png"} alt="AUDIT BIM" className="h-auto w-full max-w-[200px] mx-auto" />
+              <img src="/audit-bim-logo-azul.png" alt="AUDIT BIM" className="h-auto w-full max-w-[240px] mx-auto" />
             </div>
             <p className="text-sm text-[hsl(var(--login-card-muted))]">Crie sua conta</p>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -71,7 +69,6 @@ export default function RegisterPage() {
                 <label htmlFor="confirmPassword" className="block text-sm font-medium text-[hsl(var(--login-card-foreground))]">Confirmar Senha</label>
                 <input id="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={6} className="login-card-input mt-1 block w-full rounded-xl border px-3 py-2 placeholder:text-[hsl(var(--login-card-muted)/0.7)] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--login-card-ring))]" placeholder="Digite a senha novamente" />
               </div>
-              <p className="text-xs text-[hsl(var(--login-card-muted))]">{PASSWORD_HINT}</p>
               {error && <p className="text-sm text-red-600">{error}</p>}
               <button type="submit" disabled={loading} className="login-card-btn w-full rounded-xl px-4 py-2 font-medium hover:opacity-90 disabled:opacity-50 transition-colors">
                 {loading ? "Criando conta…" : "Criar conta"}
