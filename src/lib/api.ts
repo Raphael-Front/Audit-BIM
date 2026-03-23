@@ -261,6 +261,26 @@ export async function logout() {
   }
 }
 
+const FRIENDLY_ABORT_MSG =
+  "Sessão expirada ou inválida. Feche outras abas do app, limpe os dados do site no navegador e tente novamente.";
+
+function isAbortOrConnectionError(err: unknown): boolean {
+  if (err instanceof Error) {
+    const m = err.message.toLowerCase();
+    const name = (err as Error & { name?: string }).name?.toLowerCase() ?? "";
+    return (
+      name === "aborterror" ||
+      m.includes("signal is aborted") ||
+      m.includes("aborted") ||
+      m.includes("timeout") ||
+      m.includes("504") ||
+      m.includes("gateway") ||
+      m.includes("refresh token")
+    );
+  }
+  return false;
+}
+
 /** Solicita recuperação de senha via email. redirectTo usa VITE_APP_URL em produção para o link abrir na sua app. */
 export async function forgotPassword(email: string): Promise<void> {
   try {
@@ -271,6 +291,9 @@ export async function forgotPassword(email: string): Promise<void> {
     });
     if (error) throw new Error(error.message ?? "Erro ao enviar email de recuperação");
   } catch (err) {
+    if (isAbortOrConnectionError(err)) {
+      throw new Error(FRIENDLY_ABORT_MSG);
+    }
     if (err instanceof Error) throw err;
     throw new Error(
       "Não foi possível conectar ao servidor. Verifique se o projeto Supabase está ativo e tente novamente."

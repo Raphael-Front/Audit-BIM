@@ -37,18 +37,20 @@ export default function ForgotPasswordPage() {
         const m = (err as { message: unknown }).message;
         if (typeof m === "string" && m && m !== "{}") msg = m;
       }
-      if (
+      const lower = String(msg).toLowerCase();
+      const isTechnical =
         msg === "{}" ||
-        msg.includes("504") ||
-        msg.toLowerCase().includes("timeout") ||
-        msg.toLowerCase().includes("gateway") ||
-        msg.toLowerCase().includes("aborted") ||
-        msg.toLowerCase().includes("signal is aborted") ||
-        msg.toLowerCase().includes("refresh token")
-      ) {
+        lower.includes("504") ||
+        lower.includes("timeout") ||
+        lower.includes("gateway") ||
+        lower.includes("aborted") ||
+        lower.includes("signal is aborted") ||
+        lower.includes("refresh token") ||
+        (err instanceof Error && (err as Error & { name?: string }).name === "AbortError");
+      if (isTechnical) {
         msg = "Sessão expirada ou inválida. Feche outras abas do app, limpe os dados do site no navegador e tente novamente.";
       }
-      setError(String(msg));
+      setError(msg);
     } finally {
       setLoading(false);
     }
