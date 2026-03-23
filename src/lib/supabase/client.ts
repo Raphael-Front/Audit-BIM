@@ -10,12 +10,6 @@ const effectiveKey =
   key ||
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MTc2OTIwMCwiZXhwIjoxOTU3MzQ1NjAwfQ.placeholder";
 
-if (!url || !key) {
-  console.warn(
-    "NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY não configurados. Configure nas variáveis de ambiente (Vercel: Settings → Environment Variables)."
-  );
-}
-
 let instance: SupabaseClient | null = null;
 
 export function createSupabaseClient(): SupabaseClient {
