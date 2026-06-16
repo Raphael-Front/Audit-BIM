@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { login, setToken, resendConfirmationEmail } from "@/lib/api";
+import { createSupabaseClient } from "@/lib/supabase/client";
 import { useState, useEffect } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,6 +14,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [msLoading, setMsLoading] = useState(false);
   const [showResend, setShowResend] = useState(false);
   const [resendEmail, setResendEmail] = useState("");
   const [resendLoading, setResendLoading] = useState(false);
@@ -39,6 +41,26 @@ export default function LoginPage() {
       document.body.style.overflow = "";
     };
   }, []);
+
+  async function handleMicrosoftLogin() {
+    setError("");
+    setMsLoading(true);
+    try {
+      const supabase = createSupabaseClient();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "azure",
+        options: {
+          scopes: "email openid profile",
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (error) throw error;
+      // O navegador é redirecionado para a Microsoft; nada mais a fazer aqui.
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao entrar com Microsoft");
+      setMsLoading(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -103,6 +125,28 @@ export default function LoginPage() {
               >
                 {loading ? "Entrando…" : "Entrar"}
               </button>
+
+              <div className="flex items-center gap-3 py-1">
+                <span className="h-px flex-1 bg-[hsl(var(--login-card-muted)/0.3)]" />
+                <span className="text-xs text-[hsl(var(--login-card-muted))]">ou</span>
+                <span className="h-px flex-1 bg-[hsl(var(--login-card-muted)/0.3)]" />
+              </div>
+
+              <button
+                type="button"
+                onClick={handleMicrosoftLogin}
+                disabled={msLoading}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-[hsl(var(--login-card-muted)/0.4)] px-6 py-2.5 text-base font-medium text-[hsl(var(--login-card-foreground))] hover:bg-[hsl(var(--login-card-muted)/0.1)] disabled:opacity-50 transition-colors"
+              >
+                <svg width="18" height="18" viewBox="0 0 21 21" aria-hidden="true">
+                  <rect x="1" y="1" width="9" height="9" fill="#f25022" />
+                  <rect x="11" y="1" width="9" height="9" fill="#7fba00" />
+                  <rect x="1" y="11" width="9" height="9" fill="#00a4ef" />
+                  <rect x="11" y="11" width="9" height="9" fill="#ffb900" />
+                </svg>
+                {msLoading ? "Redirecionando…" : "Entrar com Microsoft"}
+              </button>
+
               <div className="space-y-2 pt-1 text-center">
                 <Link href="/forgot-password" className="block text-sm text-[hsl(var(--login-card-muted))] hover:text-[hsl(var(--login-card-foreground))] transition-colors">
                   Esqueceu sua senha?
