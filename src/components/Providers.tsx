@@ -5,6 +5,7 @@ import { Toaster, toast } from "sonner";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ConfirmProvider } from "@/contexts/ConfirmContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ObraProvider } from "@/contexts/ObraContext";
 
 function isTimeoutError(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
@@ -85,8 +86,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <ConfirmProvider>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
-            {children}
-            <Toaster richColors position="top-right" closeButton />
+            <ObraProvider>
+              {children}
+              <Toaster richColors position="top-right" closeButton />
+            </ObraProvider>
           </AuthProvider>
         </QueryClientProvider>
       </ConfirmProvider>

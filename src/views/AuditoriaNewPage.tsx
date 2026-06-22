@@ -26,6 +26,7 @@ import {
   type CategoryRow,
 } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { useObra } from "@/contexts/ObraContext";
 
 const inputBase =
   "w-full rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-3 py-2.5 pl-10 text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] focus:border-transparent";
@@ -60,6 +61,7 @@ function FieldWithIcon({
 
 export function AuditoriaNewPage() {
   const { me } = useAuth();
+  const { selectedObraId } = useObra();
   const [workId, setWorkId] = useState("");
   const [phaseId, setPhaseId] = useState("");
   const [disciplineId, setDisciplineId] = useState("");
@@ -89,6 +91,11 @@ export function AuditoriaNewPage() {
     worksList().then(setWorks).catch(() => setWorks([]));
     libraryDisciplines().then(setDisciplines).catch(() => setDisciplines([]));
   }, []);
+
+  // Pré-seleciona a obra global (mantém o campo editável). Em "Todas as obras" não pré-seleciona.
+  useEffect(() => {
+    if (selectedObraId && !workId) setWorkId(selectedObraId);
+  }, [selectedObraId, workId]);
 
   useEffect(() => {
     if (!workId) {

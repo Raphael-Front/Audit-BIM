@@ -22,12 +22,11 @@ import {
   dashboardWorstDisciplines,
   dashboardErrorsByCategory,
   dashboardWorksByScore,
-  worksList,
   AUDIT_STATUS_BADGE_CLASS,
   getDisplayStatus,
   type AuditListItem,
-  type WorkRow,
 } from "@/lib/api";
+import { useObra } from "@/contexts/ObraContext";
 import { CheckCircle2, Package, Calendar, ShieldCheck, Clock } from "lucide-react";
 
 const MIN_AUDITORIAS = 10;
@@ -45,7 +44,8 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 function DashboardPage() {
-  const [workId, setWorkId] = useState<string>("");
+  const { selectedObraId } = useObra();
+  const workId = selectedObraId ?? "";
   const [dateRange, setDateRange] = useState<{ from: string; to: string }>({ from: "", to: "" });
   const [filterStatus, setFilterStatus] = useState<string>("");
   const [filterDateFrom, setFilterDateFrom] = useState<string>("");
@@ -56,11 +56,6 @@ function DashboardPage() {
     dateFrom: dateRange.from || undefined,
     dateTo: dateRange.to || undefined,
   };
-
-  const { data: obras = [] } = useQuery({
-    queryKey: ["works"],
-    queryFn: () => worksList(),
-  });
 
   const auditsDateFrom = filterDateFrom || dateRange.from || undefined;
   const auditsDateTo = filterDateTo || dateRange.to || undefined;
@@ -181,18 +176,6 @@ function DashboardPage() {
           subtitle="Visão geral do sistema"
           actions={
             <div className="flex flex-nowrap items-center gap-3">
-              <select
-                value={workId}
-                onChange={(e) => setWorkId(e.target.value)}
-                className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2.5 pl-4 pr-10 text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
-              >
-                <option value="">Obras</option>
-                {(obras as WorkRow[]).map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.name}
-                  </option>
-                ))}
-              </select>
               <DateRangePicker value={dateRange} onChange={setDateRange} />
             </div>
           }
