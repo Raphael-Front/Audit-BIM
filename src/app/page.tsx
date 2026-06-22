@@ -3,7 +3,6 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { TemplatesPage } from "@/views/TemplatesPage";
 
 export default function Page() {
   const router = useRouter();
@@ -12,6 +11,8 @@ export default function Page() {
   useEffect(() => {
     if (status === "unauthenticated") {
       router.replace("/login");
+    } else if (status === "authenticated") {
+      router.replace("/dashboard");
     }
   }, [status, router]);
 
@@ -23,13 +24,9 @@ export default function Page() {
     );
   }
 
-  if (status === "unauthenticated") {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-sm text-[var(--color-text-secondary)]">Redirecionando para o login…</p>
-      </div>
-    );
-  }
-
-  return <TemplatesPage />;
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <p className="text-sm text-[var(--color-text-secondary)]">Redirecionando…</p>
+    </div>
+  );
 }
