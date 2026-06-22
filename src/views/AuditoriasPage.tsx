@@ -9,17 +9,16 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import {
   api,
   getPermissionsConfig,
-  worksList,
   libraryAuditPhases,
   AUDIT_STATUS_LABELS,
   AUDIT_STATUS_BADGE_CLASS,
   getDisplayStatus,
   formatDateLocal,
   type AuditListItem,
-  type WorkRow,
   type AuditPhaseRow,
 } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { useObra } from "@/contexts/ObraContext";
 import { getScoreColorClass } from "@/views/RelatoriosPage";
 
 const PER_PAGE = 10;
@@ -100,7 +99,8 @@ function SortArrowIcon({ active, direction }: { active: boolean; direction: Sort
 export function AuditoriasPage() {
   const searchParams = useSearchParams();
   const currentPage = Math.max(1, parseInt(searchParams?.get("page") ?? "1", 10));
-  const [workId, setWorkId] = useState<string>("");
+  const { selectedObraId } = useObra();
+  const workId = selectedObraId ?? "";
   const [phaseId, setPhaseId] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [sortColumn, setSortColumn] = useState<SortColumn>(null);
@@ -124,10 +124,6 @@ export function AuditoriasPage() {
     }
   };
 
-  const { data: obras = [] } = useQuery({
-    queryKey: ["works"],
-    queryFn: () => worksList(),
-  });
   const { data: fases = [] } = useQuery({
     queryKey: ["library-audit-phases"],
     queryFn: () => libraryAuditPhases(),
@@ -228,18 +224,6 @@ export function AuditoriasPage() {
         subtitle="Planejamento e execução"
         actions={
           <div className="flex flex-nowrap items-center gap-3">
-            <select
-              value={workId}
-              onChange={(e) => setWorkId(e.target.value)}
-              className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5 pl-4 pr-10 text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)] focus:ring-[3px] focus:ring-[var(--color-accent-soft)]"
-            >
-              <option value="">Obras</option>
-              {(obras as WorkRow[]).map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.name}
-                </option>
-              ))}
-            </select>
             <select
               value={phaseId}
               onChange={(e) => setPhaseId(e.target.value)}

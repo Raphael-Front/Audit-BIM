@@ -8,6 +8,7 @@ import { logout, logActivityAsync, notificationsUpcomingCount, notificationsPend
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppSidebar } from "./AppSidebar";
+import { ObraSelector } from "./ObraSelector";
 import { cn } from "@/lib/utils";
 
 function SettingsIcon() {
@@ -207,6 +208,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             >
               {sidebarCollapsed ? <PanelLeftOpen className="size-5" /> : <PanelLeftClose className="size-5" />}
             </button>
+            <ObraSelector />
           </div>
           <nav className="flex items-center gap-1 ml-auto">
             <NotificationsDropdown />
