@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import { Info } from "lucide-react";
 import { Container } from "@/components/layout/Container";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { libraryDisciplines, getPermissionsConfig, type DisciplineRow } from "@/lib/api";
@@ -34,6 +35,10 @@ export function TemplatesPage() {
           ) : undefined
         }
       />
+      <p className="mt-3 flex items-center gap-1.5 text-sm text-[var(--color-text-muted)]">
+        <Info className="size-4 shrink-0" />
+        A Biblioteca é compartilhada entre todas as obras.
+      </p>
       <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {(disciplines as DisciplineRow[]).map((d) => (
           <Link
