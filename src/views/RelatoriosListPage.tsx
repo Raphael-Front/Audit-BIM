@@ -8,7 +8,8 @@ import { Container } from "@/components/layout/Container";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { RelatorioGeralModal } from "@/components/relatorios/RelatorioGeralModal";
 import { DateRangePicker } from "@/components/DateRangePicker";
-import { auditsList, worksList, AUDIT_STATUS_BADGE_CLASS, getDisplayStatus, type AuditListItem, type WorkRow } from "@/lib/api";
+import { auditsList, AUDIT_STATUS_BADGE_CLASS, getDisplayStatus, type AuditListItem } from "@/lib/api";
+import { useObra } from "@/contexts/ObraContext";
 
 const PAGE_SIZE = 15;
 
@@ -26,18 +27,14 @@ const statusLabel: Record<string, string> = {
 
 export function RelatoriosListPage() {
   const [modalOpen, setModalOpen] = useState(false);
-  const [workId, setWorkId] = useState<string>("");
+  const { selectedObraId } = useObra();
+  const workId = selectedObraId ?? "";
   const [dateRange, setDateRange] = useState<{ from: string; to: string }>({ from: "", to: "" });
   const [page, setPage] = useState(1);
 
   useEffect(() => {
     setPage(1);
   }, [workId, dateRange.from, dateRange.to]);
-
-  const { data: obras = [] } = useQuery({
-    queryKey: ["works"],
-    queryFn: () => worksList(),
-  });
 
   const { data: auditorias = [], isLoading } = useQuery({
     queryKey: ["audits", "concluida", workId, dateRange.from, dateRange.to],
@@ -66,18 +63,6 @@ export function RelatoriosListPage() {
         }
         actions={
           <div className="flex flex-nowrap items-center gap-3">
-            <select
-              value={workId}
-              onChange={(e) => setWorkId(e.target.value)}
-              className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2.5 pl-4 pr-10 text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
-            >
-              <option value="">Obras</option>
-              {obras.map((o: WorkRow) => (
-                <option key={o.id} value={o.id}>
-                  {o.name}
-                </option>
-              ))}
-            </select>
             <DateRangePicker value={dateRange} onChange={setDateRange} />
             <button
               type="button"

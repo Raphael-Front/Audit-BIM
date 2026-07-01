@@ -23,6 +23,7 @@ import {
   dashboardErrorsByCategory,
   dashboardWorksByScore,
   AUDIT_STATUS_BADGE_CLASS,
+  AUDIT_STATUS_FILTER_HIDDEN,
   getDisplayStatus,
   type AuditListItem,
 } from "@/lib/api";
@@ -526,11 +527,13 @@ function DashboardPage() {
                 className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-1.5 text-sm"
               >
                 <option value="">Todos</option>
-                {Object.entries(STATUS_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
+                {Object.entries(STATUS_LABELS)
+                  .filter(([value]) => !AUDIT_STATUS_FILTER_HIDDEN.has(value))
+                  .map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
               </select>
             </div>
             <div className="flex flex-col gap-1 sm:flex-row sm:items-center">

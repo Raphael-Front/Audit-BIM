@@ -11,6 +11,7 @@ import {
   getPermissionsConfig,
   libraryAuditPhases,
   AUDIT_STATUS_LABELS,
+  AUDIT_STATUS_FILTER_HIDDEN,
   AUDIT_STATUS_BADGE_CLASS,
   getDisplayStatus,
   formatDateLocal,
@@ -244,11 +245,13 @@ export function AuditoriasPage() {
               className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5 pl-4 pr-10 text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)] focus:ring-[3px] focus:ring-[var(--color-accent-soft)]"
             >
               <option value="">Status</option>
-              {Object.entries(AUDIT_STATUS_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
+              {Object.entries(AUDIT_STATUS_LABELS)
+                .filter(([value]) => !AUDIT_STATUS_FILTER_HIDDEN.has(value))
+                .map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
             </select>
             {canCreate && (
               <>
