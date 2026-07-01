@@ -771,6 +771,90 @@ export async function libraryAuditPhases(): Promise<AuditPhaseRow[]> {
   return (data ?? []).map((r) => ({ id: r.id, name: r.nome, label: r.codigo ?? r.nome, order: r.ordemSequencial }));
 }
 
+/** Cria uma nova fase de auditoria. Apenas auditor_bim ou admin_bim. */
+export async function createLibraryAuditPhase(body: { name: string; label?: string }): Promise<AuditPhaseRow> {
+  const me = getCachedUser();
+  if (me.role === "leitor") throw new Error("Sem permissão para criar fases.");
+  const codigo = (body.label?.trim() || body.name).replace(/\s+/g, "_").toUpperCase().slice(0, 20) || "FASE";
+  // Próxima ordem = maior ordemSequencial existente + 1
+  const { data: max } = await supabase
+    .from("dim_fases")
+    .select("ordemSequencial")
+    .order("ordemSequencial", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const order = (max?.ordemSequencial ?? -1) + 1;
+  const { data, error } = await supabase
+    .from("dim_fases")
+    .insert({ nome: body.name, codigo, ordemSequencial: order, ativo: true })
+    .select("id, nome, codigo, ordemSequencial")
+    .single();
+  if (error) throw new Error(error.message);
+  logActivityAsync({
+    userId: me.id,
+    userName: me.name,
+    userEmail: me.email,
+    userRole: me.role,
+    action: "CREATE",
+    entity: "BIBLIOTECA",
+    entityId: data.id,
+    entityName: data.nome,
+    details: `Fase criada: ${data.nome}`,
+    newValue: { nome: data.nome, codigo, ordemSequencial: order },
+  });
+  return { id: data.id, name: data.nome, label: data.codigo ?? data.nome, order: data.ordemSequencial };
+}
+
+/** Atualiza uma fase de auditoria. */
+export async function updateLibraryAuditPhase(phaseId: string, body: { name: string }): Promise<AuditPhaseRow> {
+  const codigo = body.name.replace(/\s+/g, "_").toUpperCase().slice(0, 20) || "FASE";
+  const { data, error } = await supabase
+    .from("dim_fases")
+    .update({ nome: body.name, codigo })
+    .eq("id", phaseId)
+    .select("id, nome, codigo, ordemSequencial")
+    .single();
+  if (error) throw new Error(error.message);
+  try {
+    const me = getCachedUser();
+    logActivityAsync({
+      userId: me.id,
+      userName: me.name,
+      userEmail: me.email,
+      userRole: me.role,
+      action: "UPDATE",
+      entity: "BIBLIOTECA",
+      entityId: phaseId,
+      entityName: body.name,
+      details: `Fase atualizada: ${body.name}`,
+      newValue: { nome: body.name, codigo },
+    });
+  } catch {
+    /* ignore */
+  }
+  return { id: data.id, name: data.nome, label: data.codigo ?? data.nome, order: data.ordemSequencial };
+}
+
+/** Exclui (desativa) uma fase de auditoria. */
+export async function deleteLibraryAuditPhase(phaseId: string): Promise<void> {
+  const me = getCachedUser();
+  if (me.role === "leitor") throw new Error("Sem permissão para excluir fases.");
+  const { data: fase } = await supabase.from("dim_fases").select("nome").eq("id", phaseId).single();
+  const { error } = await supabase.from("dim_fases").update({ ativo: false }).eq("id", phaseId);
+  if (error) throw new Error(error.message);
+  logActivityAsync({
+    userId: me.id,
+    userName: me.name,
+    userEmail: me.email,
+    userRole: me.role,
+    action: "DELETE",
+    entity: "BIBLIOTECA",
+    entityId: phaseId,
+    entityName: fase?.nome ?? undefined,
+    details: `Fase excluída (desativada): ${fase?.nome ?? phaseId}`,
+  });
+}
+
 export async function libraryDisciplines(): Promise<DisciplineRow[]> {
   const { data, error } = await supabase
     .from("dim_disciplinas")

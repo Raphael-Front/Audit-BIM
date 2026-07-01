@@ -10,6 +10,9 @@ import {
   libraryAllCategories,
   libraryAllChecklistItemsUnique,
   libraryAuditPhases,
+  createLibraryAuditPhase,
+  updateLibraryAuditPhase,
+  deleteLibraryAuditPhase,
   updateLibraryDiscipline,
   deleteLibraryDiscipline,
   updateLibraryCategory,
@@ -30,11 +33,14 @@ import { toast } from "@/lib/toast";
 import { useConfirm } from "@/contexts/ConfirmContext";
 import { useAuth } from "@/contexts/AuthContext";
 
-type TabType = "disciplines" | "categories" | "items" | "applicability";
+type TabType = "disciplines" | "phases" | "categories" | "items" | "applicability";
 
 export function LibraryManagePage() {
   const [activeTab, setActiveTab] = useState<TabType>("disciplines");
   const [editingDisciplineId, setEditingDisciplineId] = useState<string | null>(null);
+  const [editingPhaseId, setEditingPhaseId] = useState<string | null>(null);
+  const [isCreatingPhase, setIsCreatingPhase] = useState(false);
+  const [newPhaseName, setNewPhaseName] = useState("");
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
@@ -131,6 +137,34 @@ export function LibraryManagePage() {
     },
   });
 
+  const createPhaseMutation = useMutation({
+    mutationFn: (name: string) => createLibraryAuditPhase({ name }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["auditPhases"] });
+      setIsCreatingPhase(false);
+      setNewPhaseName("");
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "Erro ao criar fase"),
+  });
+
+  const updatePhaseMutation = useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string }) => updateLibraryAuditPhase(id, { name }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["auditPhases"] });
+      setEditingPhaseId(null);
+      setEditName("");
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "Erro ao atualizar fase"),
+  });
+
+  const deletePhaseMutation = useMutation({
+    mutationFn: (id: string) => deleteLibraryAuditPhase(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["auditPhases"] });
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "Erro ao excluir fase"),
+  });
+
   const updateCategoryMutation = useMutation({
     mutationFn: ({ id, name }: { id: string; name: string }) => updateLibraryCategory(id, { name }),
     onSuccess: () => {
@@ -213,6 +247,11 @@ export function LibraryManagePage() {
     setEditName(discipline.name);
   }
 
+  function startEditPhase(phase: AuditPhaseRow) {
+    setEditingPhaseId(phase.id);
+    setEditName(phase.name);
+  }
+
   function startEditCategory(category: CategoryRow) {
     setEditingCategoryId(category.id);
     setEditName(category.name);
@@ -257,6 +296,15 @@ export function LibraryManagePage() {
               Nova disciplina
             </Link>
           )}
+          {activeTab === "phases" && canEdit && !isCreatingPhase && (
+            <button
+              type="button"
+              onClick={() => setIsCreatingPhase(true)}
+              className="rounded-xl bg-[hsl(var(--accent))] px-4 py-2 font-medium text-[hsl(var(--accent-foreground))] hover:opacity-90"
+            >
+              Nova fase
+            </button>
+          )}
           {activeTab === "categories" && (
             <Link
               href="/categories/new"
@@ -290,6 +338,17 @@ export function LibraryManagePage() {
             }`}
           >
             Disciplinas ({disciplines.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("phases")}
+            className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === "phases"
+                ? "border-[hsl(var(--macro))] text-[hsl(var(--macro))]"
+                : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+            }`}
+          >
+            Fases ({auditPhases.length})
           </button>
           <button
             type="button"
@@ -412,6 +471,136 @@ export function LibraryManagePage() {
             ))}
             {disciplines.length === 0 && (
               <p className="text-sm text-[hsl(var(--muted-foreground))]">Nenhuma disciplina cadastrada.</p>
+            )}
+          </div>
+        )}
+
+        {activeTab === "phases" && (
+          <div className="space-y-4">
+            {/* Formulário de criação de nova fase */}
+            {isCreatingPhase && (
+              <div className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-4">
+                <h3 className="mb-4 text-lg font-medium text-[hsl(var(--foreground))]">Criar nova fase</h3>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (newPhaseName.trim()) {
+                      createPhaseMutation.mutate(newPhaseName.trim());
+                    }
+                  }}
+                  className="flex items-center gap-4"
+                >
+                  <input
+                    type="text"
+                    value={newPhaseName}
+                    onChange={(e) => setNewPhaseName(e.target.value)}
+                    required
+                    autoFocus
+                    placeholder="Ex: Fundação, Estrutura, Acabamento"
+                    className="flex-1 rounded-lg border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2 text-[hsl(var(--foreground))]"
+                  />
+                  <button
+                    type="submit"
+                    disabled={createPhaseMutation.isPending || !newPhaseName.trim()}
+                    className="rounded-lg bg-[hsl(var(--accent))] px-4 py-2 text-sm font-medium text-[hsl(var(--accent-foreground))] hover:opacity-90 disabled:opacity-50"
+                  >
+                    {createPhaseMutation.isPending ? "Criando..." : "Criar fase"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCreatingPhase(false);
+                      setNewPhaseName("");
+                    }}
+                    className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-4 py-2 text-sm font-medium text-[hsl(var(--foreground))] hover:opacity-90"
+                  >
+                    Cancelar
+                  </button>
+                </form>
+              </div>
+            )}
+
+            {(auditPhases as AuditPhaseRow[]).map((phase) => (
+              <div
+                key={phase.id}
+                className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-4"
+              >
+                {editingPhaseId === phase.id ? (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (editName.trim()) {
+                        updatePhaseMutation.mutate({ id: phase.id, name: editName.trim() });
+                      }
+                    }}
+                    className="flex items-center gap-4"
+                  >
+                    <input
+                      type="text"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      required
+                      className="flex-1 rounded-lg border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2 text-[hsl(var(--foreground))]"
+                    />
+                    <button
+                      type="submit"
+                      disabled={updatePhaseMutation.isPending}
+                      className="rounded-lg bg-[hsl(var(--accent))] px-4 py-2 text-sm font-medium text-[hsl(var(--accent-foreground))] hover:opacity-90 disabled:opacity-50"
+                    >
+                      Salvar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingPhaseId(null);
+                        setEditName("");
+                      }}
+                      className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-4 py-2 text-sm font-medium text-[hsl(var(--foreground))] hover:opacity-90"
+                    >
+                      Cancelar
+                    </button>
+                  </form>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-[hsl(var(--foreground))]">{phase.name}</p>
+                      {phase.label && phase.label !== phase.name && (
+                        <p className="text-sm text-[hsl(var(--muted-foreground))]">Código: {phase.label}</p>
+                      )}
+                    </div>
+                    {canEdit && (
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => startEditPhase(phase)}
+                          className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-3 py-1.5 text-sm font-medium text-[hsl(var(--macro))] hover:bg-[hsl(var(--muted))]"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const ok = await confirm({
+                              title: "Excluir fase",
+                              message: `Tem certeza que deseja excluir a fase "${phase.name}"? Ela será desativada e não aparecerá em novas auditorias.`,
+                              confirmLabel: "Excluir",
+                              variant: "danger",
+                            });
+                            if (ok) deletePhaseMutation.mutate(phase.id);
+                          }}
+                          disabled={deletePhaseMutation.isPending}
+                          className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+                        >
+                          Excluir
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+            {auditPhases.length === 0 && !isCreatingPhase && (
+              <p className="text-sm text-[hsl(var(--muted-foreground))]">Nenhuma fase cadastrada.</p>
             )}
           </div>
         )}
