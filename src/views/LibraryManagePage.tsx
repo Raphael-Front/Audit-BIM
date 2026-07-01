@@ -44,6 +44,8 @@ export function LibraryManagePage() {
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const [editCode, setEditCode] = useState("");
+  const [newPhaseCode, setNewPhaseCode] = useState("");
   const [editItemDescription, setEditItemDescription] = useState("");
   const [editItemWeight, setEditItemWeight] = useState(1);
   const [editItemMaxPoints, setEditItemMaxPoints] = useState(1);
@@ -122,11 +124,13 @@ export function LibraryManagePage() {
   }, [activeTab, categories]);
 
   const updateDisciplineMutation = useMutation({
-    mutationFn: ({ id, name }: { id: string; name: string }) => updateLibraryDiscipline(id, { name }),
+    mutationFn: ({ id, name, code }: { id: string; name: string; code: string }) =>
+      updateLibraryDiscipline(id, { name, code }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["disciplines"] });
       setEditingDisciplineId(null);
       setEditName("");
+      setEditCode("");
     },
   });
 
@@ -138,21 +142,24 @@ export function LibraryManagePage() {
   });
 
   const createPhaseMutation = useMutation({
-    mutationFn: (name: string) => createLibraryAuditPhase({ name }),
+    mutationFn: ({ name, code }: { name: string; code: string }) => createLibraryAuditPhase({ name, code }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["auditPhases"] });
       setIsCreatingPhase(false);
       setNewPhaseName("");
+      setNewPhaseCode("");
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : "Erro ao criar fase"),
   });
 
   const updatePhaseMutation = useMutation({
-    mutationFn: ({ id, name }: { id: string; name: string }) => updateLibraryAuditPhase(id, { name }),
+    mutationFn: ({ id, name, code }: { id: string; name: string; code: string }) =>
+      updateLibraryAuditPhase(id, { name, code }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["auditPhases"] });
       setEditingPhaseId(null);
       setEditName("");
+      setEditCode("");
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : "Erro ao atualizar fase"),
   });
@@ -245,11 +252,13 @@ export function LibraryManagePage() {
   function startEditDiscipline(discipline: DisciplineRow) {
     setEditingDisciplineId(discipline.id);
     setEditName(discipline.name);
+    setEditCode(discipline.code ?? "");
   }
 
   function startEditPhase(phase: AuditPhaseRow) {
     setEditingPhaseId(phase.id);
     setEditName(phase.name);
+    setEditCode(phase.label && phase.label !== phase.name ? phase.label : "");
   }
 
   function startEditCategory(category: CategoryRow) {
@@ -400,18 +409,31 @@ export function LibraryManagePage() {
                     onSubmit={(e) => {
                       e.preventDefault();
                       if (editName.trim()) {
-                        updateDisciplineMutation.mutate({ id: discipline.id, name: editName.trim() });
+                        updateDisciplineMutation.mutate({ id: discipline.id, name: editName.trim(), code: editCode.trim() });
                       }
                     }}
-                    className="flex items-center gap-4"
+                    className="flex items-end gap-4"
                   >
-                    <input
-                      type="text"
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      required
-                      className="flex-1 rounded-lg border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2 text-[hsl(var(--foreground))]"
-                    />
+                    <div className="w-32">
+                      <label className="mb-1 block text-xs font-medium text-[hsl(var(--muted-foreground))]">Código</label>
+                      <input
+                        type="text"
+                        value={editCode}
+                        onChange={(e) => setEditCode(e.target.value)}
+                        placeholder="Ex: ARQ"
+                        className="w-full rounded-lg border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2 text-[hsl(var(--foreground))]"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="mb-1 block text-xs font-medium text-[hsl(var(--muted-foreground))]">Nome</label>
+                      <input
+                        type="text"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        required
+                        className="w-full rounded-lg border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2 text-[hsl(var(--foreground))]"
+                      />
+                    </div>
                     <button
                       type="submit"
                       disabled={updateDisciplineMutation.isPending}
@@ -424,6 +446,7 @@ export function LibraryManagePage() {
                       onClick={() => {
                         setEditingDisciplineId(null);
                         setEditName("");
+                        setEditCode("");
                       }}
                       className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-4 py-2 text-sm font-medium text-[hsl(var(--foreground))] hover:opacity-90"
                     >
@@ -485,20 +508,33 @@ export function LibraryManagePage() {
                   onSubmit={(e) => {
                     e.preventDefault();
                     if (newPhaseName.trim()) {
-                      createPhaseMutation.mutate(newPhaseName.trim());
+                      createPhaseMutation.mutate({ name: newPhaseName.trim(), code: newPhaseCode.trim() });
                     }
                   }}
-                  className="flex items-center gap-4"
+                  className="flex items-end gap-4"
                 >
-                  <input
-                    type="text"
-                    value={newPhaseName}
-                    onChange={(e) => setNewPhaseName(e.target.value)}
-                    required
-                    autoFocus
-                    placeholder="Ex: Fundação, Estrutura, Acabamento"
-                    className="flex-1 rounded-lg border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2 text-[hsl(var(--foreground))]"
-                  />
+                  <div className="w-32">
+                    <label className="mb-1 block text-xs font-medium text-[hsl(var(--muted-foreground))]">Código</label>
+                    <input
+                      type="text"
+                      value={newPhaseCode}
+                      onChange={(e) => setNewPhaseCode(e.target.value)}
+                      autoFocus
+                      placeholder="Ex: EP"
+                      className="w-full rounded-lg border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2 text-[hsl(var(--foreground))]"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="mb-1 block text-xs font-medium text-[hsl(var(--muted-foreground))]">Nome</label>
+                    <input
+                      type="text"
+                      value={newPhaseName}
+                      onChange={(e) => setNewPhaseName(e.target.value)}
+                      required
+                      placeholder="Ex: Estudo Preliminar, Projeto Básico"
+                      className="w-full rounded-lg border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2 text-[hsl(var(--foreground))]"
+                    />
+                  </div>
                   <button
                     type="submit"
                     disabled={createPhaseMutation.isPending || !newPhaseName.trim()}
@@ -511,6 +547,7 @@ export function LibraryManagePage() {
                     onClick={() => {
                       setIsCreatingPhase(false);
                       setNewPhaseName("");
+                      setNewPhaseCode("");
                     }}
                     className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-4 py-2 text-sm font-medium text-[hsl(var(--foreground))] hover:opacity-90"
                   >
@@ -530,18 +567,31 @@ export function LibraryManagePage() {
                     onSubmit={(e) => {
                       e.preventDefault();
                       if (editName.trim()) {
-                        updatePhaseMutation.mutate({ id: phase.id, name: editName.trim() });
+                        updatePhaseMutation.mutate({ id: phase.id, name: editName.trim(), code: editCode.trim() });
                       }
                     }}
-                    className="flex items-center gap-4"
+                    className="flex items-end gap-4"
                   >
-                    <input
-                      type="text"
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      required
-                      className="flex-1 rounded-lg border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2 text-[hsl(var(--foreground))]"
-                    />
+                    <div className="w-32">
+                      <label className="mb-1 block text-xs font-medium text-[hsl(var(--muted-foreground))]">Código</label>
+                      <input
+                        type="text"
+                        value={editCode}
+                        onChange={(e) => setEditCode(e.target.value)}
+                        placeholder="Ex: EP"
+                        className="w-full rounded-lg border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2 text-[hsl(var(--foreground))]"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="mb-1 block text-xs font-medium text-[hsl(var(--muted-foreground))]">Nome</label>
+                      <input
+                        type="text"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        required
+                        className="w-full rounded-lg border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2 text-[hsl(var(--foreground))]"
+                      />
+                    </div>
                     <button
                       type="submit"
                       disabled={updatePhaseMutation.isPending}
@@ -554,6 +604,7 @@ export function LibraryManagePage() {
                       onClick={() => {
                         setEditingPhaseId(null);
                         setEditName("");
+                        setEditCode("");
                       }}
                       className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-4 py-2 text-sm font-medium text-[hsl(var(--foreground))] hover:opacity-90"
                     >

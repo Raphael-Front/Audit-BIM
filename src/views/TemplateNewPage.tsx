@@ -9,6 +9,7 @@ import { NavArrowIcon } from "@/components/ui/NavArrowIcon";
 
 export function TemplateNewPage() {
   const [nome, setNome] = useState("");
+  const [codigo, setCodigo] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
@@ -20,7 +21,7 @@ export function TemplateNewPage() {
     try {
       await api("/library/disciplines", {
         method: "POST",
-        body: JSON.stringify({ name: nome, order: 0 }),
+        body: JSON.stringify({ name: nome.trim(), code: codigo.trim() || undefined, order: 0 }),
       });
       router.push("/templates");
     } catch (err) {
@@ -41,13 +42,24 @@ export function TemplateNewPage() {
       <h1 className="text-3xl font-semibold tracking-tight text-[hsl(var(--macro))]">Nova disciplina</h1>
       <form onSubmit={handleSubmit} className="mt-8 max-w-md space-y-4">
         <div>
+          <label htmlFor="codigo" className="block text-sm font-medium text-[hsl(var(--foreground))]">Código</label>
+          <input
+            id="codigo"
+            value={codigo}
+            onChange={(e) => setCodigo(e.target.value)}
+            placeholder="Ex: ARQ, AIT, EST"
+            className="mt-1 w-full rounded-xl border-2 border-[hsl(var(--foreground))]/30 bg-white px-3 py-2.5 text-[hsl(var(--foreground))] shadow-[0_1px_4px_rgba(0,0,0,0.15)] placeholder:text-[hsl(var(--muted-foreground))] focus:border-[hsl(var(--ring))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]/30"
+          />
+          <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">Sigla exibida nas auditorias. Se vazio, é gerado a partir do nome.</p>
+        </div>
+        <div>
           <label htmlFor="nome" className="block text-sm font-medium text-[hsl(var(--foreground))]">Nome *</label>
           <input
             id="nome"
             value={nome}
             onChange={(e) => setNome(e.target.value)}
             required
-            placeholder="Ex: Arquitetura, Estrutura"
+            placeholder="Ex: Arquitetura, Arquitetura de Interiores"
             className="mt-1 w-full rounded-xl border-2 border-[hsl(var(--foreground))]/30 bg-white px-3 py-2.5 text-[hsl(var(--foreground))] shadow-[0_1px_4px_rgba(0,0,0,0.15)] placeholder:text-[hsl(var(--muted-foreground))] focus:border-[hsl(var(--ring))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]/30"
           />
         </div>
