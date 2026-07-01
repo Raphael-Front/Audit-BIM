@@ -772,10 +772,10 @@ export async function libraryAuditPhases(): Promise<AuditPhaseRow[]> {
 }
 
 /** Cria uma nova fase de auditoria. Apenas auditor_bim ou admin_bim. */
-export async function createLibraryAuditPhase(body: { name: string; label?: string }): Promise<AuditPhaseRow> {
+export async function createLibraryAuditPhase(body: { name: string; code?: string }): Promise<AuditPhaseRow> {
   const me = getCachedUser();
   if (me.role === "leitor") throw new Error("Sem permissão para criar fases.");
-  const codigo = (body.label?.trim() || body.name).replace(/\s+/g, "_").toUpperCase().slice(0, 20) || "FASE";
+  const codigo = body.code?.trim() || body.name.replace(/\s+/g, "_").toUpperCase().slice(0, 20) || "FASE";
   // Próxima ordem = maior ordemSequencial existente + 1
   const { data: max } = await supabase
     .from("dim_fases")
@@ -806,8 +806,8 @@ export async function createLibraryAuditPhase(body: { name: string; label?: stri
 }
 
 /** Atualiza uma fase de auditoria. */
-export async function updateLibraryAuditPhase(phaseId: string, body: { name: string }): Promise<AuditPhaseRow> {
-  const codigo = body.name.replace(/\s+/g, "_").toUpperCase().slice(0, 20) || "FASE";
+export async function updateLibraryAuditPhase(phaseId: string, body: { name: string; code?: string }): Promise<AuditPhaseRow> {
+  const codigo = body.code?.trim() || body.name.replace(/\s+/g, "_").toUpperCase().slice(0, 20) || "FASE";
   const { data, error } = await supabase
     .from("dim_fases")
     .update({ nome: body.name, codigo })
@@ -866,8 +866,8 @@ export async function libraryDisciplines(): Promise<DisciplineRow[]> {
 }
 
 /** Atualiza uma disciplina */
-export async function updateLibraryDiscipline(disciplineId: string, body: { name: string }): Promise<DisciplineRow> {
-  const codigo = body.name.replace(/\s+/g, "_").toUpperCase().slice(0, 20) || "DISC";
+export async function updateLibraryDiscipline(disciplineId: string, body: { name: string; code?: string }): Promise<DisciplineRow> {
+  const codigo = body.code?.trim() || body.name.replace(/\s+/g, "_").toUpperCase().slice(0, 20) || "DISC";
   const { data, error } = await supabase
     .from("dim_disciplinas")
     .update({ nome: body.name, codigo })
@@ -2082,8 +2082,8 @@ export async function api<T>(
   throw new Error(`api(${path}) não implementado em modo Supabase`);
 }
 
-async function libraryCreateDiscipline(body: { name: string; order?: number }) {
-  const codigo = body.name.replace(/\s+/g, "_").toUpperCase().slice(0, 20) || "DISC";
+async function libraryCreateDiscipline(body: { name: string; code?: string; order?: number }) {
+  const codigo = body.code?.trim() || body.name.replace(/\s+/g, "_").toUpperCase().slice(0, 20) || "DISC";
   const { data, error } = await supabase
     .from("dim_disciplinas")
     .insert({ nome: body.name, codigo, ativo: true })
