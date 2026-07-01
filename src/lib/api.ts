@@ -1091,6 +1091,13 @@ export const AUDIT_STATUS_LABELS: Record<string, string> = {
   pausada: "Pausada",
 };
 
+/**
+ * Status que NÃO aparecem nos filtros de auditoria por serem redundantes com os demais
+ * (os outros status já englobam esses casos). Continuam válidos para exibição de badges e
+ * lógica interna — só ficam ocultos como opção de filtro.
+ */
+export const AUDIT_STATUS_FILTER_HIDDEN = new Set<string>(["planejada", "nao_iniciado", "pausada"]);
+
 /** Retorna o status efetivo para exibição: "em_atraso" se agendado com data planejada no passado. */
 export function getDisplayStatus(audit: { status: string; startDate?: string; plannedDate?: string }): string {
   const status = audit.status;
