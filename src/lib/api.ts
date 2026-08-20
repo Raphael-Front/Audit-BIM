@@ -328,8 +328,20 @@ export function getTokenFromCookie(): string | null {
 }
 
 // --- Helpers para Supabase ---
-function toWorkRow(row: { id: string; nome: string; codigo: string | null; ativo: boolean }) {
-  return { id: row.id, name: row.nome, code: row.codigo, active: row.ativo };
+function toWorkRow(row: {
+  id: string;
+  nome: string;
+  codigo: string | null;
+  ativo: boolean;
+  construflowProjectId?: string | null;
+}) {
+  return {
+    id: row.id,
+    name: row.nome,
+    code: row.codigo,
+    active: row.ativo,
+    construflowProjectId: row.construflowProjectId ?? null,
+  };
 }
 
 // --- Works (dim_obras) ---
@@ -338,6 +350,8 @@ export type WorkRow = {
   name: string;
   code: string | null;
   active: boolean;
+  /** ID do projeto correspondente no Construflow (usado para montar o link dos apontamentos) */
+  construflowProjectId?: string | null;
   phases?: { id: string; name: string; order: number }[];
 };
 
@@ -644,7 +658,7 @@ async function dashboardWorksByScoreFallback(filters?: DashboardFilters): Promis
 export async function worksList(): Promise<WorkRow[]> {
   const { data, error } = await supabase
     .from("dim_obras")
-    .select("id, nome, codigo, ativo")
+    .select("id, nome, codigo, ativo, construflowProjectId")
     .is("deletedAt", null)
     .order("createdAt", { ascending: false });
   if (error) throw new Error(error.message);
@@ -654,7 +668,7 @@ export async function worksList(): Promise<WorkRow[]> {
 export async function workGet(id: string): Promise<WorkRow> {
   const { data, error } = await supabase
     .from("dim_obras")
-    .select("id, nome, codigo, ativo")
+    .select("id, nome, codigo, ativo, construflowProjectId")
     .eq("id", id)
     .is("deletedAt", null)
     .single();
@@ -662,12 +676,17 @@ export async function workGet(id: string): Promise<WorkRow> {
   return toWorkRow(data);
 }
 
-export async function workCreate(payload: { name: string; code?: string | null }): Promise<WorkRow> {
+export async function workCreate(payload: {
+  name: string;
+  code?: string | null;
+  construflowProjectId?: string | null;
+}): Promise<WorkRow> {
   const codigo = payload.code?.trim() || payload.name.replace(/\s+/g, "_").toUpperCase().slice(0, 50) || "OBRA";
+  const construflowProjectId = payload.construflowProjectId?.trim() || null;
   const { data, error } = await supabase
     .from("dim_obras")
-    .insert({ nome: payload.name, codigo })
-    .select("id, nome, codigo, ativo")
+    .insert({ nome: payload.name, codigo, construflowProjectId })
+    .select("id, nome, codigo, ativo, construflowProjectId")
     .single();
   if (error) throw new Error(error.message);
   try {
@@ -692,18 +711,21 @@ export async function workCreate(payload: { name: string; code?: string | null }
 
 export async function workUpdate(
   id: string,
-  payload: { name?: string; active?: boolean }
+  payload: { name?: string; active?: boolean; construflowProjectId?: string | null }
 ): Promise<WorkRow> {
   const { data: before } = await supabase.from("dim_obras").select("nome, codigo, ativo").eq("id", id).single();
   const updates: Record<string, unknown> = {};
   if (payload.name != null) updates.nome = payload.name;
   /* codigo é imutável - nunca atualizado */
   if (payload.active !== undefined) updates.ativo = payload.active;
+  if (payload.construflowProjectId !== undefined) {
+    updates.construflowProjectId = payload.construflowProjectId?.trim() || null;
+  }
   const { data, error } = await supabase
     .from("dim_obras")
     .update(updates)
     .eq("id", id)
-    .select("id, nome, codigo, ativo")
+    .select("id, nome, codigo, ativo, construflowProjectId")
     .single();
   if (error) throw new Error(error.message);
   try {
@@ -1154,7 +1176,7 @@ export type AuditDetail = {
   title: string;
   status: string;
   disciplineId?: string;
-  work?: { name: string; code?: string | null };
+  work?: { name: string; code?: string | null; construflowProjectId?: string | null };
   phase?: { name: string; code?: string | null };
   discipline?: { name: string; code?: string | null };
   auditPhase?: { name: string; label: string };
@@ -1170,11 +1192,45 @@ export type EvidenciaAnexo = {
   arquivoTipo: string;
 };
 
+// --- Construflow (deep link de apontamentos) ---
+
+/** Base da aplicação web do Construflow. */
+export const CONSTRUFLOW_BASE_URL = "https://app.construflow.com.br";
+
+/**
+ * Extrai os identificadores de uma URL de apontamento do Construflow, no formato
+ * `https://app.construflow.com.br/workspace/project/<projectId>/issues?issueId=<issueId>`.
+ * Também aceita apenas o número do issueId colado sozinho.
+ */
+export function parseConstruflowIssueUrl(input: string): { projectId: string | null; issueId: string | null } {
+  const s = (input ?? "").trim();
+  if (!s) return { projectId: null, issueId: null };
+  // Colaram apenas o número do apontamento
+  if (/^\d+$/.test(s)) return { projectId: null, issueId: s };
+  const projectId = s.match(/\/project\/(\d+)/)?.[1] ?? null;
+  const issueId = s.match(/[?&]issueId=(\d+)/i)?.[1] ?? null;
+  return { projectId, issueId };
+}
+
+/** Monta a URL do apontamento no Construflow. Retorna null se faltar algum identificador. */
+export function buildConstruflowIssueUrl(
+  projectId?: string | null,
+  issueId?: string | null
+): string | null {
+  const p = (projectId ?? "").trim();
+  const i = (issueId ?? "").trim();
+  if (!p || !i) return null;
+  return `${CONSTRUFLOW_BASE_URL}/workspace/project/${p}/issues?issueId=${i}`;
+}
+
 export type AuditItemRow = {
   id: string;
   status: string;
   evidenceText?: string | null;
+  /** Código legível do apontamento, exibido ao usuário (ex.: "6796") */
   construflowRef?: string | null;
+  /** ID interno do apontamento no Construflow, usado para montar o link (ex.: "1620463") */
+  construflowIssueId?: string | null;
   nextReviewAt?: string | null;
   anexos?: EvidenciaAnexo[];
   checklistItem?: { description: string; category?: { name: string; id?: string; discipline?: { name: string } } };
@@ -1397,7 +1453,7 @@ export async function auditGet(id: string): Promise<AuditDetail> {
     .from("fato_auditorias")
     .select(`
       id, titulo, codigoAuditoria, status, dataInicio, dataFimPrevista, dataConclusao, disciplinaId,
-      dim_obras!fato_auditorias_obraId_fkey(nome, codigo),
+      dim_obras!fato_auditorias_obraId_fkey(nome, codigo, construflowProjectId),
       dim_fases!fato_auditorias_faseId_fkey(nome, codigo),
       dim_disciplinas!fato_auditorias_disciplinaId_fkey(nome, codigo),
       dim_usuarios!fato_auditorias_auditorResponsavelId_fkey(nomeCompleto)
@@ -1426,7 +1482,13 @@ export async function auditGet(id: string): Promise<AuditDetail> {
     title: data.titulo ?? data.codigoAuditoria,
     status: data.status,
     disciplineId: data.disciplinaId ?? undefined,
-    work: data.dim_obras ? { name: data.dim_obras.nome, code: data.dim_obras.codigo ?? null } : undefined,
+    work: data.dim_obras
+      ? {
+          name: data.dim_obras.nome,
+          code: data.dim_obras.codigo ?? null,
+          construflowProjectId: data.dim_obras.construflowProjectId ?? null,
+        }
+      : undefined,
     phase: data.dim_fases ? { name: data.dim_fases.nome, code: data.dim_fases.codigo ?? null } : undefined,
     discipline: data.dim_disciplinas ? { name: data.dim_disciplinas.nome, code: data.dim_disciplinas.codigo ?? null } : undefined,
     auditPhase: data.dim_fases ? { name: data.dim_fases.nome, label: data.dim_fases.codigo ?? data.dim_fases.nome } : undefined,
@@ -1467,7 +1529,7 @@ export async function auditItems(id: string): Promise<AuditItemRow[]> {
   const { data, error } = await supabase
     .from("fato_auditoria_itens")
     .select(`
-      id, status, evidenciaObservacao, codigoConstruflow, proximaRevisao, categoriaId, itemVerificacaoSnapshot,
+      id, status, evidenciaObservacao, codigoConstruflow, construflowIssueId, proximaRevisao, categoriaId, itemVerificacaoSnapshot,
       tbl_checklist_template!fato_auditoria_itens_templateItemId_fkey(itemVerificacao, dim_categorias(nome, dim_disciplinas(nome))),
       categoria_direta:dim_categorias!fato_auditoria_itens_categoriaId_fkey(nome)
     `)
@@ -1505,6 +1567,7 @@ export async function auditItems(id: string): Promise<AuditItemRow[]> {
       status: STATUS_FROM_DB[dbStatus] ?? dbStatus,
       evidenceText: (r.evidenciaObservacao as string | null) ?? null,
       construflowRef: (r.codigoConstruflow as string | null) ?? null,
+      construflowIssueId: (r.construflowIssueId as string | null) ?? null,
       nextReviewAt: (r.proximaRevisao as string | null) ?? null,
       anexos: anexosMap[r.id] ?? [],
       categoryId: catId,
@@ -1565,7 +1628,7 @@ export async function auditItemsForReport(id: string): Promise<AuditReportItemRo
   const { data, error } = await supabase
     .from("fato_auditoria_itens")
     .select(`
-      id, status, evidenciaObservacao, codigoConstruflow, proximaRevisao, pontosMaximoSnapshot, pontosObtidos, disciplinaId, itemVerificacaoSnapshot, categoriaId,
+      id, status, evidenciaObservacao, codigoConstruflow, construflowIssueId, proximaRevisao, pontosMaximoSnapshot, pontosObtidos, disciplinaId, itemVerificacaoSnapshot, categoriaId,
       dim_disciplinas!fato_auditoria_itens_disciplinaId_fkey(nome),
       dim_categorias!fato_auditoria_itens_categoriaId_fkey(nome),
       tbl_checklist_template!fato_auditoria_itens_templateItemId_fkey(itemVerificacao, dim_categorias(nome, dim_disciplinas(nome)))
@@ -1605,6 +1668,7 @@ export async function auditItemsForReport(id: string): Promise<AuditReportItemRo
       status: STATUS_FROM_DB[dbStatus as string] ?? (dbStatus as string),
       evidenceText: (r.evidenciaObservacao as string) ?? null,
       construflowRef: (r.codigoConstruflow as string) ?? null,
+      construflowIssueId: (r.construflowIssueId as string | null) ?? null,
       nextReviewAt: (r.proximaRevisao as string) ?? null,
       pontosMaximo: pontosMax,
       pontosObtidos: pontosObt,
@@ -1816,7 +1880,7 @@ const STATUS_FROM_DB: Record<string, string> = {
 export async function auditUpdateItem(
   auditId: string,
   itemId: string,
-  payload: { status?: string; evidenceText?: string; construflowRef?: string }
+  payload: { status?: string; evidenceText?: string; construflowRef?: string; construflowIssueId?: string | null }
 ): Promise<AuditItemRow> {
   // Ao editar item em auditoria concluída, reabre para em_andamento (mostra Finalizar verificação)
   const { data: auditRow } = await supabase.from("fato_auditorias").select("status").eq("id", auditId).single();
@@ -1832,6 +1896,9 @@ export async function auditUpdateItem(
   if (payload.status != null) updates.status = STATUS_TO_DB[payload.status] ?? payload.status;
   if (payload.evidenceText != null) updates.evidenciaObservacao = payload.evidenceText;
   if (payload.construflowRef != null) updates.codigoConstruflow = payload.construflowRef;
+  if (payload.construflowIssueId !== undefined) {
+    updates.construflowIssueId = payload.construflowIssueId?.trim() || null;
+  }
 
   if (payload.status != null) {
     const resolvedStatus = (STATUS_TO_DB[payload.status] ?? payload.status) as string;

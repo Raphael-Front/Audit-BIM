@@ -19,6 +19,7 @@ import {
   type AuditReportItemRow,
 } from "@/lib/api";
 import { EvidenciaLink } from "@/components/evidencias/EvidenciaLink";
+import { ConstruflowLink } from "@/components/construflow/ConstruflowLink";
 
 const statusLabel: Record<string, string> = {
   planejada: "Planejada",
@@ -310,7 +311,12 @@ export function RelatoriosPage() {
                 )}
                 {i.construflowRef && (
                   <p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">
-                    <strong>Construflow:</strong> {i.construflowRef}
+                    <strong>Construflow:</strong>{" "}
+                    <ConstruflowLink
+                      code={i.construflowRef}
+                      issueId={i.construflowIssueId}
+                      projectId={detail.work?.construflowProjectId}
+                    />
                   </p>
                 )}
                 {i.nextReviewAt && (
