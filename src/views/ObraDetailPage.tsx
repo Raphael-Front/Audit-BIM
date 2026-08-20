@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Container } from "@/components/layout/Container";
 import { NavArrowIcon } from "@/components/ui/NavArrowIcon";
-import { workGet, workUpdate, auditsList, AUDIT_STATUS_LABELS, AUDIT_STATUS_BADGE_CLASS, getDisplayStatus, type WorkRow, type AuditListItem } from "@/lib/api";
+import { workGet, workUpdate, auditsList, parseConstruflowIssueUrl, AUDIT_STATUS_LABELS, AUDIT_STATUS_BADGE_CLASS, getDisplayStatus, type WorkRow, type AuditListItem } from "@/lib/api";
 import { getScoreColorClass } from "@/views/RelatoriosPage";
 import { useAuth } from "@/contexts/AuthContext";
 import { Pencil, Check, X } from "lucide-react";
@@ -18,6 +18,8 @@ export function ObraDetailPage() {
   const queryClient = useQueryClient();
   const [editingName, setEditingName] = useState(false);
   const [editNameValue, setEditNameValue] = useState("");
+  const [editingConstruflow, setEditingConstruflow] = useState(false);
+  const [construflowValue, setConstruflowValue] = useState("");
 
   const isAdmin = me?.role === "admin_bim";
 
@@ -37,6 +39,15 @@ export function ObraDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["work", id] });
       setEditingName(false);
+    },
+  });
+
+  const updateConstruflowMutation = useMutation({
+    mutationFn: (value: string) => workUpdate(id!, { construflowProjectId: value.trim() || null }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["work", id] });
+      queryClient.invalidateQueries({ queryKey: ["works"] });
+      setEditingConstruflow(false);
     },
   });
 
@@ -146,6 +157,81 @@ export function ObraDetailPage() {
           <p className="mt-1 text-sm text-[var(--color-text-secondary)]">Código: {(obra as WorkRow).code}</p>
         )}
         <span className={`mt-2 inline-block rounded-[20px] px-2.5 py-0.5 text-[11px] font-semibold ${(obra as WorkRow).active ? "bg-[var(--color-success-bg)] text-[var(--color-success)]" : "bg-[var(--color-bg)] text-[var(--color-text-muted)]"}`}>{(obra as WorkRow).active ? "Ativa" : "Inativa"}</span>
+
+        {/* Vínculo com o projeto no Construflow (habilita os links dos apontamentos) */}
+        <div className="mt-4 border-t border-[var(--color-border)] pt-4">
+          {isAdmin && editingConstruflow ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <label htmlFor="cf-project" className="text-sm text-[var(--color-text-secondary)]">
+                ID do projeto no Construflow:
+              </label>
+              <input
+                id="cf-project"
+                type="text"
+                value={construflowValue}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  const fromUrl = parseConstruflowIssueUrl(v).projectId;
+                  setConstruflowValue(fromUrl ?? v);
+                }}
+                placeholder="Ex: 1668"
+                autoFocus
+                className="w-40 rounded-lg border border-[hsl(var(--border))] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") updateConstruflowMutation.mutate(construflowValue);
+                  if (e.key === "Escape") setEditingConstruflow(false);
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => updateConstruflowMutation.mutate(construflowValue)}
+                disabled={updateConstruflowMutation.isPending}
+                className="inline-flex items-center gap-1 rounded-lg bg-[var(--color-success)] px-2.5 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+              >
+                <Check className="h-4 w-4" />
+                Salvar
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditingConstruflow(false)}
+                disabled={updateConstruflowMutation.isPending}
+                className="inline-flex items-center gap-1 rounded-lg border border-[hsl(var(--border))] px-2.5 py-1.5 text-sm font-medium hover:bg-[hsl(var(--muted))] disabled:opacity-50"
+              >
+                <X className="h-4 w-4" />
+                Cancelar
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm text-[var(--color-text-secondary)]">
+                Projeto no Construflow:{" "}
+                {(obra as WorkRow).construflowProjectId ? (
+                  <strong className="text-[var(--color-text-primary)]">{(obra as WorkRow).construflowProjectId}</strong>
+                ) : (
+                  <em className="text-[var(--color-text-muted)]">não vinculado</em>
+                )}
+              </span>
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setConstruflowValue((obra as WorkRow).construflowProjectId ?? "");
+                    setEditingConstruflow(true);
+                  }}
+                  className="rounded-lg p-1.5 text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--foreground))]"
+                  title="Vincular projeto do Construflow"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          )}
+          {!(obra as WorkRow).construflowProjectId && (
+            <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
+              Sem esse vínculo, os códigos de apontamento das auditorias não viram link para o Construflow.
+            </p>
+          )}
+        </div>
       </div>
       <div className="mt-8">
         <h2 className="text-lg font-medium text-[hsl(var(--macro))]">Auditorias desta obra</h2>

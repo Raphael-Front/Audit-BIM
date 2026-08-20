@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { NavArrowIcon } from "@/components/ui/NavArrowIcon";
+import { ConstruflowLink } from "@/components/construflow/ConstruflowLink";
 import {
   auditCancel,
   auditComplete,
@@ -146,7 +147,16 @@ export function AuditDetailPage() {
               </span>
             </div>
             {item.evidenceText && <p className="mt-1 text-sm text-purple-600/90">{item.evidenceText}</p>}
-            {item.construflowRef && <p className="mt-1 text-sm text-purple-600/90">Construflow: {item.construflowRef}</p>}
+            {item.construflowRef && (
+              <p className="mt-1 text-sm text-purple-600/90">
+                Construflow:{" "}
+                <ConstruflowLink
+                  code={item.construflowRef}
+                  issueId={item.construflowIssueId}
+                  projectId={audit?.work?.construflowProjectId}
+                />
+              </p>
+            )}
           </li>
         ))}
       </ul>

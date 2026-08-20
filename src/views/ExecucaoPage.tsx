@@ -6,8 +6,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Container } from "@/components/layout/Container";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { NavArrowIcon } from "@/components/ui/NavArrowIcon";
-import { auditGet, auditItems, auditUpdateItem, auditUploadEvidence, auditDeleteEvidence, auditFinishVerification, auditComplete, auditAddCustomItem, libraryCategories, libraryGetOutrosCategory, buildNcsIncompletosMessage, type AuditDetail, type AuditItemRow } from "@/lib/api";
+import { auditGet, auditItems, auditUpdateItem, auditUploadEvidence, auditDeleteEvidence, auditFinishVerification, auditComplete, auditAddCustomItem, libraryCategories, libraryGetOutrosCategory, buildNcsIncompletosMessage, parseConstruflowIssueUrl, type AuditDetail, type AuditItemRow } from "@/lib/api";
 import { EvidenciaLink } from "@/components/evidencias/EvidenciaLink";
+import { ConstruflowLink } from "@/components/construflow/ConstruflowLink";
+import { toast } from "@/lib/toast";
 
 const STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: "NOT_STARTED", label: "Pendente" },
@@ -35,6 +37,7 @@ export function ExecucaoPage() {
   const queryClient = useQueryClient();
   const [evidenceText, setEvidenceText] = useState<Record<string, string>>({});
   const [construflowRef, setConstruflowRef] = useState<Record<string, string>>({});
+  const [construflowIssueId, setConstruflowIssueId] = useState<Record<string, string>>({});
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [modalItemPersonalizadoOpen, setModalItemPersonalizadoOpen] = useState(false);
   const [confirmarItemPersonalizadoOpen, setConfirmarItemPersonalizadoOpen] = useState(false);
@@ -54,12 +57,15 @@ export function ExecucaoPage() {
     if (!itens) return;
     const ev: Record<string, string> = {};
     const cf: Record<string, string> = {};
+    const cfIssue: Record<string, string> = {};
     itens.forEach((i) => {
       ev[i.id] = i.evidenceText ?? "";
       cf[i.id] = i.construflowRef ?? "";
+      cfIssue[i.id] = i.construflowIssueId ?? "";
     });
     setEvidenceText(ev);
     setConstruflowRef(cf);
+    setConstruflowIssueId(cfIssue);
   }, [itens]);
 
   const { categories, itemsByCategory } = useMemo(() => {
@@ -88,8 +94,8 @@ export function ExecucaoPage() {
   }
 
   const updateItem = useMutation({
-    mutationFn: async ({ itemId, status, evidenceText: ev, construflowRef: cf }: { itemId: string; status?: string; evidenceText?: string; construflowRef?: string }) => {
-      await auditUpdateItem(id!, itemId, { status, evidenceText: ev, construflowRef: cf });
+    mutationFn: async ({ itemId, status, evidenceText: ev, construflowRef: cf, construflowIssueId: cfIssue }: { itemId: string; status?: string; evidenceText?: string; construflowRef?: string; construflowIssueId?: string | null }) => {
+      await auditUpdateItem(id!, itemId, { status, evidenceText: ev, construflowRef: cf, construflowIssueId: cfIssue });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["audit-items", id] });
@@ -138,12 +144,33 @@ export function ExecucaoPage() {
   function handleBlur(itemId: string) {
     const item = itens?.find((i) => i.id === itemId);
     if (!item) return;
-    if (evidenceText[itemId] !== (item.evidenceText ?? "") || construflowRef[itemId] !== (item.construflowRef ?? "")) {
+    if (
+      evidenceText[itemId] !== (item.evidenceText ?? "") ||
+      construflowRef[itemId] !== (item.construflowRef ?? "") ||
+      construflowIssueId[itemId] !== (item.construflowIssueId ?? "")
+    ) {
       updateItem.mutate({
         itemId,
         evidenceText: evidenceText[itemId],
         construflowRef: construflowRef[itemId] || undefined,
+        construflowIssueId: construflowIssueId[itemId] ?? null,
       });
+    }
+  }
+
+  /**
+   * Aceita a URL completa do apontamento (ou apenas o número do issueId) e guarda
+   * somente o issueId. Se a URL trouxer um projeto diferente do configurado na
+   * obra, avisa — normalmente indica apontamento colado da obra errada.
+   */
+  function handleConstruflowUrlChange(itemId: string, value: string) {
+    const parsed = parseConstruflowIssueUrl(value);
+    setConstruflowIssueId((prev) => ({ ...prev, [itemId]: parsed.issueId ?? value.trim() }));
+    const obraProject = (audit?.work?.construflowProjectId ?? "").trim();
+    if (parsed.projectId && obraProject && parsed.projectId !== obraProject) {
+      toast.error(
+        `Atenção: esse apontamento é do projeto ${parsed.projectId} no Construflow, mas esta obra está vinculada ao projeto ${obraProject}.`
+      );
     }
   }
 
@@ -344,6 +371,33 @@ export function ExecucaoPage() {
                               placeholder="ID do apontamento"
                               className="w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2 text-sm text-[hsl(var(--foreground))]"
                             />
+                            <label className="block text-sm font-medium text-[hsl(var(--foreground))]">
+                              Link do apontamento <span className="font-normal text-[hsl(var(--muted-foreground))]">(opcional)</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={construflowIssueId[i.id] ?? ""}
+                              onChange={(e) => handleConstruflowUrlChange(i.id, e.target.value)}
+                              onBlur={() => handleBlur(i.id)}
+                              placeholder="Cole aqui a URL do apontamento no Construflow"
+                              className="w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2 text-sm text-[hsl(var(--foreground))]"
+                            />
+                            {construflowIssueId[i.id] ? (
+                              audit?.work?.construflowProjectId ? (
+                                <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                                  Abrir:{" "}
+                                  <ConstruflowLink
+                                    code={construflowRef[i.id] || construflowIssueId[i.id]}
+                                    issueId={construflowIssueId[i.id]}
+                                    projectId={audit.work.construflowProjectId}
+                                  />
+                                </p>
+                              ) : (
+                                <p className="text-xs text-[var(--color-warning)]">
+                                  Configure o &quot;ID do projeto Construflow&quot; no cadastro desta obra para o link funcionar.
+                                </p>
+                              )
+                            ) : null}
                             <div className="mt-3">
                               <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">Anexar foto de evidência</label>
                               <div className="flex flex-wrap gap-2 items-center">
